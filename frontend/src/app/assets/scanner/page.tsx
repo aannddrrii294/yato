@@ -305,7 +305,7 @@ export default function AssetScannerPage() {
                       <span className="text-slate-400 font-medium">Ownership Assignee</span>
                       <span className="font-bold text-slate-800 flex items-center gap-1.5">
                         <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                        {scannedAsset.owner?.fullName || 'HermesOps Shared'}
+                        {scannedAsset.owner?.fullName || 'YATO Shared'}
                       </span>
                     </div>
 

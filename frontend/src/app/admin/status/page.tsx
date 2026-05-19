@@ -110,7 +110,7 @@ export default function SystemStatusPage() {
         },
         { 
           name: "Active Directory Gateway", 
-          description: "Syncs corporate directories with HermesOps roles", 
+          description: "Syncs corporate directories with YATO roles", 
           status: getLiveStatus("vault", "ACTIVE")
         }
       ]
@@ -200,7 +200,7 @@ export default function SystemStatusPage() {
           <header className="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h1 className="page-title text-3xl font-extrabold text-slate-900 tracking-tight">System Status</h1>
-              <p className="page-subtitle text-slate-500 mt-1">Real-time health monitoring and process states of the HermesOps cluster</p>
+              <p className="page-subtitle text-slate-500 mt-1">Real-time health monitoring and process states of the YATO cluster</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -258,7 +258,7 @@ export default function SystemStatusPage() {
             {/* Card Info Header */}
             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
               <h2 className="text-lg font-bold text-slate-900 tracking-tight">Process Status</h2>
-              <p className="text-slate-500 text-xs mt-0.5">The real-time status of daemon services and engines running in the HermesOps Server.</p>
+              <p className="text-slate-500 text-xs mt-0.5">The real-time status of daemon services and engines running in the YATO Server.</p>
             </div>
 
             {/* Tableau Table */}
@@ -269,7 +269,7 @@ export default function SystemStatusPage() {
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-3/4">Process</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-1/4">
                       <div className="flex flex-col items-center">
-                        <span className="font-extrabold text-slate-800">HermesOps Server</span>
+                        <span className="font-extrabold text-slate-800">YATO Server</span>
                         <span className="text-[10px] font-medium text-slate-400 mt-0.5 font-mono">192.168.201.18</span>
                       </div>
                     </th>

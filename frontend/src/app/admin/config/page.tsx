@@ -50,8 +50,8 @@ export default function SystemConfigPage() {
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
 
   const [brandingConfig, setBrandingConfig] = useState({
-    appName: "HermesOps",
-    appTitle: "HermesOps | Infrastructure Platform",
+    appName: "YATO",
+    appTitle: "YATO | Infrastructure Platform",
     appLogo: "",
     appFavicon: ""
   });
@@ -121,12 +121,12 @@ export default function SystemConfigPage() {
   const [dbConfig, setDbConfig] = useState({
     host: "localhost",
     port: "5432",
-    user: "hermes",
-    password: "hermespass",
-    database: "hermesops"
+    user: "yato",
+    password: "yatopass",
+    database: "yato"
   });
 
-  const [platformUrl, setPlatformUrl] = useState("https://hermes-ops.honet.web.id");
+  const [platformUrl, setPlatformUrl] = useState("https://yato.honet.web.id");
   const [autoProvisioning, setAutoProvisioning] = useState(true);
 
   const [timezoneConfig, setTimezoneConfig] = useState({
@@ -202,7 +202,7 @@ export default function SystemConfigPage() {
   };
 
   const handleManualRestart = async () => {
-    if (!confirm("Are you sure you want to restart HermesOps system services? This will temporarily interrupt ongoing connections.")) return;
+    if (!confirm("Are you sure you want to restart YATO system services? This will temporarily interrupt ongoing connections.")) return;
     try {
       await api.post("/system/config/restart");
       startRestartCountdown("Manual system restart initiated. Reloading all services...");
@@ -229,7 +229,7 @@ export default function SystemConfigPage() {
   };
 
   const startPingLoop = () => {
-    setRestartMessage("Pinging HermesOps gateway server...");
+    setRestartMessage("Pinging YATO gateway server...");
     const pingInterval = setInterval(async () => {
       try {
         await api.get("/system/config/branding");
@@ -1748,7 +1748,7 @@ export default function SystemConfigPage() {
                 <h2 className="text-sm font-bold text-slate-900">Personal Access Token</h2>
               </div>
               <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-6">
-                Generate long-lived JWT API tokens to securely integrate external systems (e.g. n8n, automated scripts) with HermesOps.
+                Generate long-lived JWT API tokens to securely integrate external systems (e.g. n8n, automated scripts) with YATO.
               </p>
               
               <div className="space-y-4">
@@ -1809,7 +1809,7 @@ export default function SystemConfigPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wider">Swagger API Explorer</h2>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed mb-6 font-medium">
-                Access the complete, interactive OpenAPI specification of HermesOps directly from your server to test requests in real-time.
+                Access the complete, interactive OpenAPI specification of YATO directly from your server to test requests in real-time.
               </p>
               <a 
                 href="/api/docs" 

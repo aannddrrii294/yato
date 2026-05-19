@@ -367,7 +367,7 @@ export default function AdminUsersPage() {
                         type="email" 
                         required
                         className="input-field pl-12 w-full py-3.5"
-                        placeholder="user@hermesops.com"
+                        placeholder="user@honet.web.id"
                         autoComplete="email"
                         value={formData.email}
                         onChange={e => setFormData({...formData, email: e.target.value})}

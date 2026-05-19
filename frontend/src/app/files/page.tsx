@@ -542,7 +542,7 @@ export default function FileManagerPage() {
                             <input 
                               type="text" 
                               required
-                              placeholder="e.g. hermes-ops-attachments"
+                              placeholder="e.g. yato-attachments"
                               value={s3Bucket}
                               onChange={(e) => setS3Bucket(e.target.value)}
                               className="input-field w-full bg-white"
