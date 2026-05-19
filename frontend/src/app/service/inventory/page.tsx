@@ -94,7 +94,7 @@ export default function ServiceInventoryPage() {
       'Owner': item.requestedBy,
       'Created At': new Date(item.createdAt).toLocaleDateString()
     }));
-    exportToCSV(exportData, 'HermesOps_Service_Inventory');
+    exportToCSV(exportData, 'YATO_Service_Inventory');
   };
 
   const updateMutation = useMutation({

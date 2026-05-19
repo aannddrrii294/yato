@@ -101,7 +101,7 @@ export default function AuditPage() {
       'User Agent': log.userAgent
     }));
 
-    exportToCSV(exportData, 'hermes_audit_logs');
+    exportToCSV(exportData, 'yato_audit_logs');
   };
 
   return (

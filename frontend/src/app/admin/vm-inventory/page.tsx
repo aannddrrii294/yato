@@ -94,7 +94,7 @@ export default function GlobalVmInventoryPage() {
       'Owner': vm.requestedBy,
       'Notes': vm.notes
     }));
-    exportToCSV(exportData, 'HermesOps_Global_VM_Inventory');
+    exportToCSV(exportData, 'YATO_Global_VM_Inventory');
   };
 
   const [currentPage, setCurrentPage] = useState(1);

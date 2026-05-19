@@ -92,7 +92,7 @@ export default function GlobalServiceAssetsPage() {
       'Owner': item.requestedBy,
       'Created At': new Date(item.createdAt).toLocaleString()
     }));
-    exportToCSV(exportData, 'HermesOps_Global_Service_Assets');
+    exportToCSV(exportData, 'YATO_Global_Service_Assets');
   };
 
   const [currentPage, setCurrentPage] = useState(1);
