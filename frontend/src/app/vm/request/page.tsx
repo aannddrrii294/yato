@@ -35,7 +35,7 @@ export default function VmRequestPage() {
     ram: 4,
     disk: 50,
     notes: "",
-    hypervisor: "Manual / Pending Integration" // Preparation for future integration
+    hypervisor: "manual" // Default fallback
   });
 
   const { data: osTemplates } = useQuery<any[]>({
@@ -61,7 +61,7 @@ export default function VmRequestPage() {
       }, 1500);
       setFormData({
         hostname: "", environment: "Production", osTemplate: osTemplates && osTemplates.length > 0 ? osTemplates[0].name : "",
-        cpu: 2, ram: 4, disk: 50, notes: "", hypervisor: "Manual / Pending Integration"
+        cpu: 2, ram: 4, disk: 50, notes: "", hypervisor: "manual"
       });
     },
   });
@@ -118,10 +118,10 @@ export default function VmRequestPage() {
                       value={formData.hypervisor}
                       onChange={e => setFormData({...formData, hypervisor: e.target.value})}
                     >
-                      <option value="Manual / Pending Integration">Manual / Pending Integration</option>
-                      <option value="Proxmox VE" disabled>Proxmox VE (Coming Soon)</option>
-                      <option value="VMware vSphere" disabled>VMware vSphere (Coming Soon)</option>
-                      <option value="OpenStack" disabled>OpenStack (Coming Soon)</option>
+                      <option value="manual">Manual / Pending Integration</option>
+                      <option value="proxmox-ve">Proxmox VE</option>
+                      <option value="vmware-vsphere">VMware vSphere</option>
+                      <option value="openstack">OpenStack</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
