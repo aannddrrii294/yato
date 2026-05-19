@@ -103,7 +103,7 @@ export class NotificationService {
       });
 
       await transporter.sendMail({
-        from: `"HermesOps" <${emailConfig.user}>`,
+        from: `"YATO" <${emailConfig.user}>`,
         to,
         subject,
         text,

@@ -94,7 +94,7 @@ export class LabelGeneratorService {
           <img src="${qrUrl}" alt="QR" />
         </div>
         <div class="details">
-          <div class="org">HermesOps Enterprise</div>
+          <div class="org">YATO Enterprise</div>
           <div class="code">${asset.assetCode}</div>
           <div class="type">${asset.assetType}</div>
           <div class="hostname">Host: ${hostnameText}</div>

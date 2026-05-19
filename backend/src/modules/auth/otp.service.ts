@@ -29,7 +29,7 @@ export class OtpService {
     });
 
     // Actual sending logic
-    const message = `Your HermesOps verification code is: *${code}*.\n\nExpires in 10 minutes.`;
+    const message = `Your YATO verification code is: *${code}*.\n\nExpires in 10 minutes.`;
     
     // EMERGENCY LOG: Always print the code to the backend console so the admin can bypass broken notification configs.
     this.logger.log(`[EMERGENCY OTP] User requested code: ${code} for ${dto.channel} (${dto.email || dto.phone || dto.telegram})`);
@@ -43,7 +43,7 @@ export class OtpService {
         const res = await this.notificationService.sendWhatsApp(cleanPhone, message);
         if (!res.success) throw new Error(res.message);
       } else if (dto.channel === 'EMAIL' && dto.email) {
-        const res = await this.notificationService.sendEmail(dto.email, 'HermesOps Verification Code', message);
+        const res = await this.notificationService.sendEmail(dto.email, 'YATO Verification Code', message);
         if (!res.success) throw new Error(res.message);
       } else if (dto.channel === 'TELEGRAM' && dto.telegram) {
         const res = await this.notificationService.sendTelegram(dto.telegram, message);

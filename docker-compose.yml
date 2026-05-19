@@ -5,9 +5,9 @@ services:
     container_name: yato-postgres
     restart: always
     environment:
-      POSTGRES_USER: hermes
-      POSTGRES_PASSWORD: hermespass
-      POSTGRES_DB: hermesops
+      POSTGRES_USER: yato
+      POSTGRES_PASSWORD: yatopass
+      POSTGRES_DB: yato
     ports:
       - "5440:5432"
     volumes:
@@ -27,7 +27,7 @@ services:
     container_name: yato-backend
     restart: always
     environment:
-      DATABASE_URL: "postgresql://hermes:hermespass@postgres:5432/hermesops?schema=public"
+      DATABASE_URL: "postgresql://yato:yatopass@postgres:5432/yato?schema=public"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}

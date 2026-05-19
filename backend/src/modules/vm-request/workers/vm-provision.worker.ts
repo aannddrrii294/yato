@@ -34,7 +34,7 @@ export class VmProvisionWorker extends WorkerHost {
         where: { requestId },
         data: {
           ipAddress,
-          sshUser: 'hermes',
+          sshUser: 'yato',
           status: 'RUNNING',
         },
       });

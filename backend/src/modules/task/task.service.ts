@@ -257,7 +257,7 @@ export class TaskService {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
     const taskUrl = `${frontendUrl}/tasks?taskId=${task.id}`;
 
     // Notify assignees
@@ -370,7 +370,7 @@ export class TaskService {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
     const taskUrl = `${frontendUrl}/tasks?taskId=${updatedTask.id}`;
 
     // Notify any new assignees
@@ -489,7 +489,7 @@ export class TaskService {
       });
 
       if (task) {
-        const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
         const taskUrl = `${frontendUrl}/tasks?taskId=${task.id}`;
 
         if (matches.length > 0) {

@@ -56,7 +56,7 @@ export class VmRequestService {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
     const ticketUrl = `${frontendUrl}/tickets?id=${request.id}&type=VM`;
 
     // Notify requester
@@ -129,7 +129,7 @@ export class VmRequestService {
     try {
       const ticket = await this.prisma.vMRequest.findUnique({ where: { id: ticketId } });
       if (ticket) {
-        const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
         const ticketUrl = `${frontendUrl}/tickets?id=${ticket.id}&type=VM`;
         await this.notificationService.sendToUserQueue(
           userId,
@@ -213,7 +213,7 @@ export class VmRequestService {
       }
     });
     // Notify requester
-    const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
     const ticketUrl = `${frontendUrl}/tickets?id=${id}&type=VM`;
     try {
       await this.notificationService.sendToUserQueue(
@@ -252,7 +252,7 @@ export class VmRequestService {
     });
 
     // Notify requester
-    const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
     const ticketUrl = `${frontendUrl}/tickets?id=${id}&type=VM`;
     try {
       await this.notificationService.sendToUserQueue(

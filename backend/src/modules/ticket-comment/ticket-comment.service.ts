@@ -76,7 +76,7 @@ export class TicketCommentService {
         ticketId = data.supportTicketId;
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || 'https://hermes-ops.honet.web.id';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://yato.honet.web.id';
       const ticketUrl = `${frontendUrl}/tickets?id=${ticketId}&type=${ticketType}`;
 
       const notifyIds = new Set([...followers.map(f => f.id), ticketOwnerId].filter(id => id && id !== data.authorId));

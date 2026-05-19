@@ -35,7 +35,7 @@ export class NotificationController {
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Test email configuration' })
   testEmail(@Body() config: any) {
-    return this.notificationService.sendEmail(config.recipient, 'HermesOps Test Email', 'This is a test email from HermesOps.', config);
+    return this.notificationService.sendEmail(config.recipient, 'YATO Test Email', 'This is a test email from YATO.', config);
   }
 
   @Post('test-wa')
@@ -43,7 +43,7 @@ export class NotificationController {
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Test WhatsApp configuration' })
   testWa(@Body() config: any) {
-    return this.notificationService.sendWhatsApp(config.recipient, 'HermesOps Test WhatsApp Message', config);
+    return this.notificationService.sendWhatsApp(config.recipient, 'YATO Test WhatsApp Message', config);
   }
 
   @Post('test-telegram')
@@ -51,6 +51,6 @@ export class NotificationController {
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Test Telegram configuration' })
   testTelegram(@Body() config: any) {
-    return this.notificationService.sendTelegram(config.chatId, '<b>HermesOps Test Telegram</b>\n\nThis is a test message from your infrastructure portal.', config);
+    return this.notificationService.sendTelegram(config.chatId, '<b>YATO Test Telegram</b>\n\nThis is a test message from your infrastructure portal.', config);
   }
 }

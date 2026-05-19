@@ -43,7 +43,7 @@ async function bootstrap() {
 
   // Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('HermesOps API')
+    .setTitle('YATO API')
     .setDescription('Infrastructure Platform Management API')
     .setVersion('1.0')
     .addBearerAuth()

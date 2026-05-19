@@ -256,7 +256,7 @@ export class AuthService {
     const secret = authenticator.generateSecret();
     const otpauthUrl = authenticator.keyuri(
       user.email,
-      'HermesOps',
+      'YATO',
       secret,
     );
     const qrCode = await qrcode.toDataURL(otpauthUrl);
