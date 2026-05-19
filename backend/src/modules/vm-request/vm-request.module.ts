@@ -3,9 +3,11 @@ import { BullModule } from '@nestjs/bullmq';
 import { VmRequestService } from './vm-request.service';
 import { VmRequestController } from './vm-request.controller';
 import { VmProvisionWorker } from './workers/vm-provision.worker';
+import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
   imports: [
+    IntegrationModule,
     BullModule.registerQueue({
       name: 'vm-provisioning',
       defaultJobOptions: {

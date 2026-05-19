@@ -269,6 +269,22 @@ model SystemSetting {
   value Json
 }
 
+model Integration {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  type         String   // e.g., PROVISIONING, MONITORING, NOTIFICATION
+  connectorKey String   // e.g., proxmox-ve, vmware-vsphere, grafana, pandorafms
+  endpointUrl  String
+  authKey      String
+  config       String   // AES-256 encrypted JSON string of credentials
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([connectorKey])
+  @@index([type])
+}
+
 model TicketComment {
   id               String          @id @default(uuid())
   content          String

@@ -27,6 +27,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { envValidationSchema } from './config/env.validation';
+import { IntegrationModule } from './modules/integration/integration.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { envValidationSchema } from './config/env.validation';
     AssetModule,
     TaskModule,
     StorageModule,
+    IntegrationModule,
   ],
   providers: [
     {
