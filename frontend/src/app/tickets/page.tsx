@@ -135,14 +135,9 @@ function TicketsContent() {
     parseInt(approveData.sshPort) <= 65535
   );
 
-  const isFormValid = approveData.ipAddress && 
-                      (selectedTicketForAction?.type === 'VM' ? isValidIPv4(approveData.ipAddress) : (isValidIPv4(approveData.ipAddress) || isValidHostname(approveData.ipAddress))) &&
-                      approveData.sshUser.trim() &&
-                      approveData.sshPassword &&
-                      approveData.sshPort &&
-                      /^\d+$/.test(approveData.sshPort) && 
-                      parseInt(approveData.sshPort) > 0 && 
-                      parseInt(approveData.sshPort) <= 65535;
+  const isFormValid = 
+    (!approveData.ipAddress || (selectedTicketForAction?.type === 'VM' ? isValidIPv4(approveData.ipAddress) : (isValidIPv4(approveData.ipAddress) || isValidHostname(approveData.ipAddress)))) &&
+    (!approveData.sshPort || (/^\d+$/.test(approveData.sshPort) && parseInt(approveData.sshPort) > 0 && parseInt(approveData.sshPort) <= 65535));
   
   const [ticketViews, setTicketViews] = useState<Record<string, number>>({});
 
@@ -1061,7 +1056,7 @@ function TicketsContent() {
                     <Shield className="w-3 h-3" /> Manual Configuration Option
                   </p>
                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    Jika automated provisioning dinonaktifkan, silakan masukkan detail IP dan kredensial di bawah ini.
+                    Jika menggunakan Plugin Automated Provisioning (Proxmox/OpenStack), <strong>KOSONGKAN</strong> form ini. Bot akan menyelesaikannya secara otomatis. Isi manual hanya jika Anda memprovisi di luar sistem.
                   </p>
                 </div>
 
@@ -1069,7 +1064,7 @@ function TicketsContent() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2 col-span-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase">
-                        {selectedTicketForAction.type === 'VM' ? 'IP Address' : 'Host / IP Address'} <span className="text-rose-500">*</span>
+                        {selectedTicketForAction.type === 'VM' ? 'IP Address' : 'Host / IP Address'} <span className="text-slate-300 font-normal ml-1">(Optional)</span>
                       </label>
                       <div className="relative">
                         <Globe className={cn("w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2", (!isIpValid && approveData.ipAddress) ? "text-rose-400" : "text-slate-400")} />
@@ -1093,7 +1088,7 @@ function TicketsContent() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase">
-                        {selectedTicketForAction.type === 'VM' ? 'SSH Port' : 'Port'} <span className="text-rose-500">*</span>
+                        {selectedTicketForAction.type === 'VM' ? 'SSH Port' : 'Port'} <span className="text-slate-300 font-normal ml-1">(Optional)</span>
                       </label>
                       <input 
                         className={cn(
@@ -1117,7 +1112,7 @@ function TicketsContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase">
-                        {selectedTicketForAction.type === 'VM' ? 'SSH User' : 'Username'} <span className="text-rose-500">*</span>
+                        {selectedTicketForAction.type === 'VM' ? 'SSH User' : 'Username'} <span className="text-slate-300 font-normal ml-1">(Optional)</span>
                       </label>
                       <div className="relative">
                         <UserIcon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1131,7 +1126,7 @@ function TicketsContent() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase">
-                        {selectedTicketForAction.type === 'VM' ? 'SSH Password' : 'Password'} <span className="text-rose-500">*</span>
+                        {selectedTicketForAction.type === 'VM' ? 'SSH Password' : 'Password'} <span className="text-slate-300 font-normal ml-1">(Optional)</span>
                       </label>
                       <div className="relative">
                         <Key className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
