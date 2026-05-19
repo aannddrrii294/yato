@@ -21,7 +21,8 @@ import {
   Loader2,
   QrCode,
   CheckSquare,
-  HardDrive
+  HardDrive,
+  Plug
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -153,6 +154,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         { icon: Users, label: "User Management", href: "/admin/users", permission: "MANAGE_USERS" },
         { icon: ShieldCheck, label: "Access Control", href: "/admin/roles", permission: "MANAGE_ROLES" },
         { icon: Settings, label: "Platform Settings", href: "/admin/config", permission: "MANAGE_CONFIG" },
+        { icon: Plug, label: "Integration Hub", href: "/admin/integrations", permission: "MANAGE_CONFIG" },
       ]
     }
   ];
