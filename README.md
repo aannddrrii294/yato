@@ -250,6 +250,63 @@ To cleanly stop, destroy, and permanently remove database persistent volumes:
 ./uninstall.sh
 ```
 
+## 🗄️ Database Architecture (Schema Topology)
+
+YATO utilizes a highly relational PostgreSQL schema to link identities, access controls, provisioning requests, and encrypted credentials. Below is the simplified core topology:
+
+```mermaid
+erDiagram
+    User ||--o{ UserRole : has
+    Role ||--o{ UserRole : assigned_to
+    User ||--o{ Credential : owns
+    User ||--o{ VMRequest : requests
+    User ||--o{ SupportTicket : creates
+    User ||--o{ Asset : manages
+
+    VMRequest {
+        String id PK
+        String ticketId UK
+        String status "PENDING, APPROVED, PROVISIONING, COMPLETED"
+        Int cpu
+        Int ram
+        Int disk
+        String environment
+        String requestedBy FK
+    }
+
+    Credential {
+        String id PK
+        String name
+        String encryptedData
+        String iv
+        String authTag
+        String ownerId FK
+    }
+
+    Asset {
+        String id PK
+        String name
+        String type "SERVER, VM, ROUTER, SWITCH"
+        String status
+        String ownerId FK
+    }
+    
+    SupportTicket {
+        String id PK
+        String subject
+        String status "OPEN, PENDING, RESOLVED, CLOSED"
+        String priority
+    }
+
+    User {
+        String id PK
+        String email UK
+        String password
+        Boolean isMfaEnabled
+        DateTime lastLogin
+    }
+```
+
 ---
 
 ## 📂 Project Architecture Tree
