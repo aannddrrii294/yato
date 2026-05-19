@@ -23,5 +23,5 @@ export const envValidationSchema = Joi.object({
   SMTP_PORT: Joi.number().default(587),
   SMTP_USER: Joi.string().required(),
   SMTP_PASS: Joi.string().required(),
-  SMTP_FROM: Joi.string().default('noreply@hermesops.internal'),
+  SMTP_FROM: Joi.string().default('noreply@yato.internal'),
 });
