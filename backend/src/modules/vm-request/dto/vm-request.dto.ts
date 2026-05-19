@@ -49,30 +49,25 @@ export class CreateVmRequestDto {
 }
 
 export class ApproveVmRequestDto {
-  @ApiProperty({ example: 'APPROVED' })
-  @IsString()
-  @IsNotEmpty()
-  status: string;
-
-  @ApiProperty({ example: '10.0.0.1' })
+  @ApiProperty({ example: '10.0.0.1', required: false })
+  @IsOptional()
   @IsIP(4, { message: 'IP Address harus berupa format IPv4 yang valid' })
-  @IsNotEmpty({ message: 'IP Address wajib diisi' })
-  ipAddress: string;
+  ipAddress?: string;
 
-  @ApiProperty({ example: 'root' })
+  @ApiProperty({ example: 'root', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'SSH Username wajib diisi' })
-  sshUser: string;
+  sshUser?: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: 'password123', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'SSH Password wajib diisi' })
-  sshPassword: string;
+  sshPassword?: string;
 
-  @ApiProperty({ example: 22 })
+  @ApiProperty({ example: 22, required: false })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(65535)
-  @IsNotEmpty({ message: 'SSH Port wajib diisi' })
-  sshPort: number;
+  sshPort?: number;
 }
