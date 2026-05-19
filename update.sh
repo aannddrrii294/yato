@@ -98,9 +98,6 @@ show_access_info() {
     echo -e "   • ${GREEN}View Logs:${NC}           $DOCKER_COMPOSE logs -f"
     echo -e "   • ${GREEN}Restart Services:${NC}    $DOCKER_COMPOSE restart"
     echo -e "   • ${GREEN}Stop Platform:${NC}       $DOCKER_COMPOSE down"
-    echo -e ""
-    echo -e "📞 ${YELLOW}SUPPORT & CONTACT:${NC}"
-    echo -e "   • Need help? Contact us at: ${GREEN}support@honet.web.id${NC}"
     echo -e "${GREEN}================================================================${NC}"
     echo -e ""
 }
