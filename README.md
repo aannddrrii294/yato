@@ -252,16 +252,46 @@ To cleanly stop, destroy, and permanently remove database persistent volumes:
 
 ## 🗄️ Database Architecture (Schema Topology)
 
-YATO utilizes a highly relational PostgreSQL schema to link identities, access controls, provisioning requests, and encrypted credentials. Below is the simplified core topology:
+YATO utilizes a highly relational PostgreSQL schema to link identities, access controls, provisioning requests, physical assets, and encrypted credentials. Below is the comprehensive topological map of the platform's core entities:
 
 ```mermaid
 erDiagram
+    %% Core Identity & Access Management (IAM)
     User ||--o{ UserRole : has
     Role ||--o{ UserRole : assigned_to
     User ||--o{ Credential : owns
+    User ||--o{ ApiToken : issues
+    User ||--o{ LoginHistory : logs
+    User ||--o{ AuditLog : performs
+
+    %% Provisioning & Orchestration Engine
     User ||--o{ VMRequest : requests
-    User ||--o{ SupportTicket : creates
+    User ||--o{ ServiceRequest : requests
+    VMRequest ||--o| VMInventory : tracks_state
+    ServiceRequest ||--o| ServiceInventory : tracks_state
+    
+    %% Asset & Infrastructure Registry
     User ||--o{ Asset : manages
+    Asset ||--o{ AssetMovement : movement_log
+    Asset ||--o{ AssetRelationship : source_of
+    Asset ||--o{ AssetRelationship : target_of
+    
+    %% Support Ticketing & Task Management
+    User ||--o{ SupportTicket : opens
+    User ||--o{ Task : creates
+    Task ||--o{ TaskComment : has
+    SupportTicket ||--o{ TicketComment : has
+    VMRequest ||--o{ TicketComment : discussions
+    ServiceRequest ||--o{ TicketComment : discussions
+
+    %% Platform Integrations
+    Integration {
+        String id PK
+        String name
+        String type "PROVISIONING, MONITORING, NOTIFICATION"
+        String connectorKey UK "proxmox-ve, vmware-vsphere, grafana"
+        Boolean isActive
+    }
 
     VMRequest {
         String id PK
@@ -274,34 +304,49 @@ erDiagram
         String requestedBy FK
     }
 
-    Credential {
+    VMInventory {
         String id PK
-        String name
-        String encryptedData
-        String iv
-        String authTag
-        String ownerId FK
+        String requestId FK
+        String ipAddress
+        String sshUser
+        String status
     }
 
     Asset {
         String id PK
-        String name
-        String type "SERVER, VM, ROUTER, SWITCH"
+        String assetCode UK "HMS-SRV-000001"
+        String assetType "SERVER, VM, ROUTER, SWITCH"
         String status
+        String rack
+        Int uPosition
+    }
+
+    AssetRelationship {
+        String id PK
+        String sourceId FK
+        String targetId FK
+        String type "VM_TO_HYPERVISOR, SERVER_TO_RACK"
+    }
+
+    Credential {
+        String id PK
+        String name
+        String type "SSH, DB, API_KEY"
+        String password "AES-256 Encrypted DEK"
         String ownerId FK
     }
-    
-    SupportTicket {
+
+    Task {
         String id PK
-        String subject
-        String status "OPEN, PENDING, RESOLVED, CLOSED"
+        String title
+        String status "NOT_STARTED, IN_PROGRESS, BLOCKED, DONE"
         String priority
     }
 
     User {
         String id PK
         String email UK
-        String password
+        String password "Bcrypt Hashed"
         Boolean isMfaEnabled
         DateTime lastLogin
     }
