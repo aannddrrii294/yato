@@ -247,27 +247,43 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No New Alerts</p>
                       </div>
                     ) : (
-                      displayNotifications?.map((n: any) => (
-                        <div 
-                          key={n.id}
-                          className={cn("p-5 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer", !n.isRead && "bg-blue-50/30")}
-                          onClick={() => {
-                            if (!n.isRead) markReadMutation.mutate(n.id);
-                            if (n.link) router.push(n.link);
-                            setShowNotifications(false);
-                          }}
-                        >
-                          <div className="flex gap-4">
-                            <div className="mt-1">
-                              {n.type === 'SUCCESS' ? <div className="w-2 h-2 bg-emerald-500 rounded-full" /> : <div className="w-2 h-2 bg-blue-500 rounded-full" />}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-[11px] font-bold text-slate-900 leading-tight mb-1">{n.title}</p>
-                              <p className="text-[10px] text-slate-500 leading-normal">{n.message}</p>
+                      displayNotifications?.map((n: any) => {
+                        // Strip "Link: ..." text from message to keep it clean and simple
+                        const cleanMsg = (n.message || "").split("Link:")[0].trim();
+                        
+                        // Parse absolute link URLs to relative paths for fast Next.js client-side navigation
+                        let targetLink = n.link;
+                        if (targetLink && targetLink.startsWith("http")) {
+                          try {
+                            const urlObj = new URL(targetLink);
+                            targetLink = urlObj.pathname + urlObj.search;
+                          } catch (e) {
+                            // fallback
+                          }
+                        }
+
+                        return (
+                          <div 
+                            key={n.id}
+                            className={cn("p-5 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer", !n.isRead && "bg-blue-50/30")}
+                            onClick={() => {
+                              if (!n.isRead) markReadMutation.mutate(n.id);
+                              if (targetLink) router.push(targetLink);
+                              setShowNotifications(false);
+                            }}
+                          >
+                            <div className="flex gap-4">
+                              <div className="mt-1">
+                                {n.type === 'SUCCESS' ? <div className="w-2 h-2 bg-emerald-500 rounded-full" /> : <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-[11px] font-bold text-slate-900 leading-tight mb-1">{n.title}</p>
+                                <p className="text-[10px] text-slate-500 leading-normal">{cleanMsg}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </motion.div>
@@ -277,7 +293,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
           
           {/* Theme/Other Quick Actions could go here */}
           <div className="w-px h-4 bg-slate-200" />
-          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter italic">HermesOps v1.0</p>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter italic">YATO v1.0</p>
         </div>
 
         <div className="relative" ref={profileRef}>
