@@ -148,7 +148,7 @@ function TicketsContent() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const views = localStorage.getItem("hermes_ticket_views");
+      const views = localStorage.getItem("yato_ticket_views");
       if (views) {
         try {
           setTicketViews(JSON.parse(views));
@@ -164,7 +164,7 @@ function TicketsContent() {
     const now = Date.now();
     const updatedViews = { ...ticketViews, [ticket.id]: now };
     setTicketViews(updatedViews);
-    localStorage.setItem("hermes_ticket_views", JSON.stringify(updatedViews));
+    localStorage.setItem("yato_ticket_views", JSON.stringify(updatedViews));
   };
 
   const [newSupportTicket, setNewSupportTicket] = useState<{
@@ -215,7 +215,7 @@ function TicketsContent() {
       const now = Date.now();
       setTicketViews(prev => {
         const updated = { ...prev, [tid]: now };
-        localStorage.setItem("hermes_ticket_views", JSON.stringify(updated));
+        localStorage.setItem("yato_ticket_views", JSON.stringify(updated));
         return updated;
       });
     }

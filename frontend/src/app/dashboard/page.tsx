@@ -51,7 +51,7 @@ function DashboardContent() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const views = localStorage.getItem("hermes_ticket_views");
+      const views = localStorage.getItem("yato_ticket_views");
       if (views) {
         try {
           setTicketViews(JSON.parse(views));
