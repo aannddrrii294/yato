@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
             <Box className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-slate-900 tracking-tight">HermesOps</span>
+          <span className="font-bold text-lg text-slate-900 tracking-tight">YATO</span>
         </Link>
       </header>
 
@@ -143,7 +143,7 @@ export default function ForgotPasswordPage() {
                       type="email" required value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-sm focus:bg-white focus:border-blue-500 outline-none transition-all"
-                      placeholder="admin@hermesops.com"
+                      placeholder="admin@honet.web.id"
                     />
                   </div>
                   {error && <p className="text-rose-500 text-xs font-bold mt-2">{error}</p>}

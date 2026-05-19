@@ -113,7 +113,7 @@ export default function SecurityPage() {
                   className="space-y-6"
                 >
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    Protect your HermesOps account with Multi-Factor Authentication. Once enabled, you'll need to provide a code from your authenticator app (like Google Authenticator or Authy) to sign in.
+                    Protect your YATO account with Multi-Factor Authentication. Once enabled, you'll need to provide a code from your authenticator app (like Google Authenticator or Authy) to sign in.
                   </p>
                   <button 
                     onClick={startMfaSetup}

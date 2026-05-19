@@ -96,7 +96,7 @@ export default function RegisterPage() {
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
             <Box className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-lg text-slate-900 tracking-tight">HermesOps</span>
+          <span className="font-bold text-lg text-slate-900 tracking-tight">YATO</span>
         </Link>
       </header>
 
@@ -166,7 +166,7 @@ export default function RegisterPage() {
                       type="email" required value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:bg-white focus:border-blue-500 outline-none transition-all"
-                      placeholder="john@hermesops.com"
+                      placeholder="john@honet.web.id"
                     />
                   </div>
                 </div>
@@ -337,7 +337,7 @@ export default function RegisterPage() {
                 <div>
                   <h1 className="page-title">Identity Verified</h1>
                   <p className="text-slate-500 text-sm mt-2 leading-relaxed max-w-xs mx-auto">
-                    Welcome to HermesOps, <span className="text-slate-900 font-bold">{formData.fullName}</span>. Your secure workspace is ready.
+                    Welcome to YATO, <span className="text-slate-900 font-bold">{formData.fullName}</span>. Your secure workspace is ready.
                   </p>
                 </div>
                 <div className="pt-4">
