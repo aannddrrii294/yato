@@ -71,4 +71,39 @@ $DOCKER_COMPOSE exec -T backend npx prisma db push --accept-data-loss
 $DOCKER_COMPOSE exec -T backend npx prisma db seed
 echo -e "${GREEN}✅ Database synchronized and seeded successfully.${NC}"
 
-echo -e "${GREEN}✅ YATO updated successfully!${NC}"
+# Detailed Success & Access Information Display
+show_access_info() {
+    echo -e ""
+    echo -e "${GREEN}================================================================${NC}"
+    echo -e "   🚀  ${GREEN}YATO (Unified Infrastructure Platform) is READY!${NC}"
+    echo -e "${GREEN}================================================================${NC}"
+    echo -e ""
+    echo -e "🌐 ${YELLOW}ACCESS URLS:${NC}"
+    echo -e "   • ${GREEN}Frontend Web Portal:${NC}  http://${SERVER_IP}:4001  or  http://${SERVER_IP}:9090 (Nginx Gateway)"
+    echo -e "   • ${GREEN}Backend API Gateway:${NC}  http://${SERVER_IP}:4000"
+    echo -e "   • ${GREEN}API Swagger Explorer:${NC} http://${SERVER_IP}:4000/docs"
+    echo -e ""
+    echo -e "🔐 ${YELLOW}DEFAULT ADMINISTRATOR CREDENTIALS:${NC}"
+    echo -e "   • ${GREEN}Email/Username:${NC}      admin@honet.web.id"
+    echo -e "   • ${GREEN}Password:${NC}            admin123"
+    echo -e "   • ${YELLOW}Note:${NC} Please change this password immediately after your first login!"
+    echo -e ""
+    echo -e "🗄️  ${YELLOW}DATABASE & SYSTEM INFO:${NC}"
+    echo -e "   • ${GREEN}Database Engine:${NC}      PostgreSQL 15 (on port 5440)"
+    echo -e "   • ${GREEN}PostgreSQL User:${NC}      yato"
+    echo -e "   • ${GREEN}PostgreSQL DB Name:${NC}   yato"
+    echo -e "   • ${GREEN}Redis Cache Port:${NC}    6380"
+    echo -e ""
+    echo -e "💡 ${YELLOW}USEFUL COMMANDS:${NC}"
+    echo -e "   • ${GREEN}View Logs:${NC}           $DOCKER_COMPOSE logs -f"
+    echo -e "   • ${GREEN}Restart Services:${NC}    $DOCKER_COMPOSE restart"
+    echo -e "   • ${GREEN}Stop Platform:${NC}       $DOCKER_COMPOSE down"
+    echo -e ""
+    echo -e "📞 ${YELLOW}SUPPORT & CONTACT:${NC}"
+    echo -e "   • Need help? Contact us at: ${GREEN}support@honet.web.id${NC}"
+    echo -e "${GREEN}================================================================${NC}"
+    echo -e ""
+}
+
+show_access_info
+
