@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useBranding } from "@/context/branding-context";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@honet.web.id");
+  const [email, setEmail] = useState("admin@yato.local");
   const [password, setPassword] = useState("admin123");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");

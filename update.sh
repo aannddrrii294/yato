@@ -84,7 +84,7 @@ show_access_info() {
     echo -e "   • ${GREEN}API Swagger Explorer:${NC} http://${SERVER_IP}:4000/docs"
     echo -e ""
     echo -e "🔐 ${YELLOW}DEFAULT ADMINISTRATOR CREDENTIALS:${NC}"
-    echo -e "   • ${GREEN}Email/Username:${NC}      admin@honet.web.id"
+    echo -e "   • ${GREEN}Email/Username:${NC}      admin@yato.local"
     echo -e "   • ${GREEN}Password:${NC}            admin123"
     echo -e "   • ${YELLOW}Note:${NC} Please change this password immediately after your first login!"
     echo -e ""

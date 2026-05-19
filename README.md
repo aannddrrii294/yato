@@ -106,7 +106,24 @@ If running directly on host machines without Docker orchestration, you must fulf
 
 ## 💻 Step-by-Step Installation Guides
 
-YATO offers modular deployment pipelines. You can install the full-stack in minutes via Docker Compose, or bootstrap a tailored developer workspace manually.
+YATO offers modular deployment pipelines. First, clone the repository from GitHub, then select your desired installation method below.
+
+### 📥 Step 1: Clone the Repository
+First, download the source code from GitHub to your target machine:
+
+```bash
+# Clone the repository via HTTPS
+git clone https://github.com/aannddrrii294/yato.git
+
+# Enter the repository directory
+cd yato
+```
+
+---
+
+### 🚀 Step 2: Choose Deployment Option
+
+Choose one of the following methods to install and launch YATO:
 
 ### Option A: Standard Full-Stack Docker Deployment (Recommended)
 This pipeline deploys isolated containers for Next.js, NestJS, PostgreSQL, Redis, and Nginx.
@@ -202,7 +219,7 @@ Once the platform is bootstrapped, use the target routing endpoints below:
 > [!WARNING]
 > Change the default administrator passwords and credentials immediately in the **Profile settings** panel after your first successful authorization!
 
-* **Username/Email:** `admin@honet.web.id`
+* **Username/Email:** `admin@yato.local`
 * **Password:** `admin123`
 
 ---
