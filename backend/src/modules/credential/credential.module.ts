@@ -6,6 +6,6 @@ import { EncryptionService } from '../../common/utils/encryption.service';
 @Module({
   controllers: [CredentialController],
   providers: [CredentialService, EncryptionService],
-  exports: [CredentialService],
+  exports: [CredentialService, EncryptionService],
 })
 export class CredentialModule {}
