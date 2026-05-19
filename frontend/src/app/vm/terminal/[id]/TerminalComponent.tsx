@@ -24,7 +24,7 @@ export default function TerminalComponent() {
     if (!socketRef.current || !xtermRef.current) return;
     
     setIsConnecting(true);
-    xtermRef.current.writeln("\r\n\x1b[34m[HermesOps]\x1b[0m Initiating SSH connection...");
+    xtermRef.current.writeln("\r\n\x1b[34m[YATO]\x1b[0m Initiating SSH connection...");
     socketRef.current.emit("startTerminal", { 
       vmId: id,
       ...overrides
@@ -52,7 +52,7 @@ export default function TerminalComponent() {
     fitAddon.fit();
     xtermRef.current = term;
 
-    term.writeln("\x1b[34m[HermesOps]\x1b[0m Establishing secure gateway channel...");
+    term.writeln("\x1b[34m[YATO]\x1b[0m Establishing secure gateway channel...");
 
     // Initialize Socket.io
     const socket = io("/terminal", {
@@ -218,7 +218,7 @@ export default function TerminalComponent() {
         <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 uppercase">
           <span className="text-slate-600 truncate max-w-[200px]">ID: {id}</span>
           <div className="w-px h-3 bg-slate-800" />
-          <span>&copy; 2026 HermesOps</span>
+          <span>&copy; 2026 YATO</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
