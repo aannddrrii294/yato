@@ -25,7 +25,8 @@ import {
   AtSign,
   ChevronRight,
   Send,
-  Search
+  Search,
+  Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBranding } from "@/context/branding-context";
@@ -208,7 +209,7 @@ export default function AdminUsersPage() {
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secondary Contact</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assigned Roles</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Security</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Onboarded</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Onboarded & Last Access</th>
                     <th className="px-6 py-4 text-right"></th>
                   </tr>
                 </thead>
@@ -264,8 +265,23 @@ export default function AdminUsersPage() {
                           {user.isMfaEnabled ? 'MFA SECURE' : 'MFA PENDING'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase">
-                        {formatDate(user.createdAt, { hour: '2-digit', minute: '2-digit' })}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase">
+                            {formatDate(user.createdAt, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          {user.lastLogin ? (
+                            <span className="text-[10px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              {formatDate(user.lastLogin, { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-300 uppercase flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              Never Logged In
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
