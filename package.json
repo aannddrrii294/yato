@@ -1,0 +1,19 @@
+{
+  "name": "yato",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "license:inject": "node add-copyright-header.js",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js}": [
+      "node add-copyright-header.js",
+      "git add"
+    ]
+  }
+}

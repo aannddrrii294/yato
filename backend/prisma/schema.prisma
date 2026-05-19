@@ -1,0 +1,436 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  username          String?        @unique
+  password          String
+  fullName          String
+  phoneNumber       String?
+  personalEmail     String?
+  telegramId        String?
+  isMfaEnabled      Boolean        @default(false)
+  emailNotificationEnabled      Boolean        @default(true)
+  whatsappNotificationEnabled   Boolean        @default(true)
+  telegramNotificationEnabled    Boolean        @default(true)
+  mfaSecret         String?
+  failedLoginAttempts Int          @default(0)
+  lockoutUntil      DateTime?
+  lastLogin         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  roles             UserRole[]
+  vmRequests        VMRequest[]    @relation("UserVMRequests")
+  serviceRequests   ServiceRequest[] @relation("UserServiceRequests")
+  supportTickets    SupportTicket[] @relation("UserSupportTickets")
+  approvedVMs       VMRequest[]    @relation("AdminVMApprovals")
+  approvedServiceRequests ServiceRequest[] @relation("AdminServiceApprovals")
+  apiTokens         ApiToken[]
+  loginHistory      LoginHistory[]
+  auditLogs         AuditLog[]
+  comments          TicketComment[]
+  followedVMs       VMRequest[]    @relation("VMRequestFollowers")
+  followedServices  ServiceRequest[] @relation("ServiceRequestFollowers")
+  followedTickets   SupportTicket[]  @relation("SupportTicketFollowers")
+  notifications     Notification[]   @relation("UserNotifications")
+  credentials       Credential[]   @relation("UserCredentials")
+  assets            Asset[]
+  createdTasks      Task[]         @relation("UserCreatedTasks")
+  assignedTasks     Task[]         @relation("UserAssignedTasks")
+  assignedTasksMany Task[]         @relation("TaskAssignees")
+  followedTasks     Task[]         @relation("TaskFollowers")
+  updatedTasks      Task[]         @relation("UserUpdatedTasks")
+  taskComments      TaskComment[]  @relation("TaskCommentAuthor")
+  uploadedFiles     StorageFile[]  @relation("UserUploadedFiles")
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  permissions String[]   // Array of permission strings
+  users       UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+model VMRequest {
+  id           String   @id @default(uuid())
+  ticketId     String   @unique // Human-readable unique ticket ID
+  cpu          Int
+  ram          Int      // in GB
+  disk         Int      // in GB
+  hostname     String
+  osTemplate   String
+  hypervisor   String?  // Future integration field
+  environment  String
+  notes        String?
+  status       String   @default("PENDING") // PENDING, APPROVED, PROVISIONING, COMPLETED, FAILED
+  attachments  String[]
+  
+  requestedBy  String
+  user         User     @relation("UserVMRequests", fields: [requestedBy], references: [id])
+  
+  approvedBy   String?
+  admin        User?    @relation("AdminVMApprovals", fields: [approvedBy], references: [id])
+  approvedAt   DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  rejectionReason String?
+  vmInventory  VMInventory?
+  comments     TicketComment[]
+  followers    User[]          @relation("VMRequestFollowers")
+
+  @@index([status])
+  @@index([requestedBy])
+  @@index([ticketId])
+}
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  ticketId    String   @unique
+  subject     String
+  description String
+  category    String   @default("GENERAL")
+  tags        String[]
+  attachments String[]
+  priority    String   @default("NORMAL")
+  status      String   @default("OPEN")
+  
+  requestedBy String
+  user        User     @relation("UserSupportTickets", fields: [requestedBy], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  comments    TicketComment[]
+  followers   User[]   @relation("SupportTicketFollowers")
+
+  @@index([status])
+  @@index([requestedBy])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING, ERROR, TICKET_UPDATE
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model VMInventory {
+  id          String    @id @default(uuid())
+  requestId   String    @unique
+  request     VMRequest @relation(fields: [requestId], references: [id])
+  ipAddress   String?
+  sshUser     String?
+  sshKeyId    String?   // Reference to Credential
+  sshPassword String?   // Encrypted
+  sshPort     Int?      @default(22)
+  status      String    @default("PROVISIONING")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ServiceRequest {
+  id           String   @id @default(uuid())
+  ticketId     String   @unique // Human-readable unique ticket ID
+  serviceName  String
+  version      String
+  environment  String
+  config       Json?
+  status       String   @default("PENDING")
+  attachments  String[]
+  requestedBy  String
+  user         User     @relation("UserServiceRequests", fields: [requestedBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  
+  rejectionReason String?
+  
+  approvedBy   String?
+  admin        User?    @relation("AdminServiceApprovals", fields: [approvedBy], references: [id])
+  approvedAt   DateTime?
+
+  inventory    ServiceInventory?
+  comments     TicketComment[]
+  followers    User[]          @relation("ServiceRequestFollowers")
+
+  @@index([status])
+  @@index([requestedBy])
+  @@index([ticketId])
+}
+
+model ServiceInventory {
+  id          String         @id @default(uuid())
+  requestId   String         @unique
+  request     ServiceRequest @relation(fields: [requestId], references: [id])
+  endpoint    String?
+  address     String?
+  port        Int?
+  username    String?
+  password    String?
+  status      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now()) @updatedAt
+}
+
+model Credential {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation("UserCredentials", fields: [userId], references: [id])
+  name        String
+  type        String   // SSH, DB, API_KEY
+  address     String?  // IP, Domain, or Service Name
+  username    String?
+  password    String   // AES-256 Encrypted
+  description String?
+  tags        String[] // Array of tagging
+  metadata    Json?    // Stores custom field values
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+
+  @@index([action])
+  @@index([timestamp])
+  @@index([userId])
+}
+model ApiToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  token     String   @unique
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ipAddress String
+  userAgent String
+  timestamp DateTime @default(now())
+}
+
+model Catalog {
+  id          String   @id @default(uuid())
+  category    String   // SERVICE_TYPE, OS_TEMPLATE
+  name        String
+  value       String
+  description String?
+  metadata    Json?    // Stores custom field definitions
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+model SystemSetting {
+  key   String @id
+  value Json
+}
+
+model TicketComment {
+  id               String          @id @default(uuid())
+  content          String
+  attachment       String?         // URL or Base64 of attached image
+  authorId         String
+  author           User            @relation(fields: [authorId], references: [id])
+  
+  vmRequestId      String?
+  vmRequest        VMRequest?      @relation(fields: [vmRequestId], references: [id], onDelete: Cascade)
+  
+  serviceRequestId String?
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  
+  supportTicketId  String?
+  supportTicket    SupportTicket?  @relation(fields: [supportTicketId], references: [id], onDelete: Cascade)
+  
+  parentId         String?
+  parent           TicketComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          TicketComment[] @relation("CommentReplies")
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String?
+  phone     String?
+  telegram  String?
+  code      String
+  type      String   // REGISTER, FORGOT_PASSWORD
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([telegram])
+}
+
+model Asset {
+  id              String             @id @default(uuid())
+  assetCode       String             @unique // HMS-SRV-000001
+  assetType       String             // SERVER, VM, SWITCH, ROUTER, FIREWALL, LAPTOP, etc.
+  hostname        String?
+  serialNumber    String?
+  status          String             @default("RECEIVED") // PROCUREMENT, RECEIVED, READY, ACTIVE, MAINTENANCE, BROKEN, RETIRED, DISPOSED
+  location        String?            // Datacenter Name or Zone
+  rack            String?            // Rack Name/ID
+  uPosition       Int?               // U position inside rack
+  ownerId         String?
+  owner           User?              @relation(fields: [ownerId], references: [id])
+  qrCodeUrl       String?            // DataURL string for rapid rendering
+  metadata        Json?              // Dynamic custom field values
+  
+  // Health Metrics (Monitoring Sync)
+  lastSeen        DateTime?
+  uptime          Float?
+  healthStatus    String             @default("UNKNOWN")
+  cpuUsage        Float?
+  memoryUsage     Float?
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
+
+  movements       AssetMovement[]    @relation("AssetMovements")
+  sourceRel       AssetRelationship[] @relation("SourceAsset")
+  targetRel       AssetRelationship[] @relation("TargetAsset")
+
+  @@index([assetCode])
+  @@index([status])
+  @@index([assetType])
+}
+
+model AssetMovement {
+  id          String   @id @default(uuid())
+  assetId     String
+  asset       Asset    @relation("AssetMovements", fields: [assetId], references: [id], onDelete: Cascade)
+  userId      String
+  action      String   // CREATE, MOVE_RACK, CHANGE_OWNER, REPAIR, RETIRE
+  fromLocation String?
+  toLocation   String?
+  fromRack     String?
+  toRack       String?
+  notes        String?
+  timestamp   DateTime @default(now())
+
+  @@index([assetId])
+  @@index([timestamp])
+}
+
+model AssetRelationship {
+  id          String   @id @default(uuid())
+  sourceId    String
+  source      Asset    @relation("SourceAsset", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId    String
+  target      Asset    @relation("TargetAsset", fields: [targetId], references: [id], onDelete: Cascade)
+  type        String   // VM_TO_HYPERVISOR, SERVER_TO_RACK, SWITCH_TO_DATACENTER, SERVICE_TO_DATABASE
+  createdAt   DateTime @default(now())
+
+  @@unique([sourceId, targetId, type])
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, BLOCKED, DONE
+  priority    String   @default("MEDIUM")      // LOW, MEDIUM, HIGH
+  taskType    String   @default("TASK")        // TASK, TROUBLESHOOT, UPDATE, BACKUP
+  dueDate     DateTime?
+  checklist   Json?    // Subtask items stored as JSON: [{ id, text, isDone }]
+  
+  createdById String
+  createdBy   User     @relation("UserCreatedTasks", fields: [createdById], references: [id])
+  
+  assigneeId  String?
+  assignee    User?    @relation("UserAssignedTasks", fields: [assigneeId], references: [id])
+  assignees   User[]   @relation("TaskAssignees")
+  
+  updatedById String?
+  updatedBy   User?    @relation("UserUpdatedTasks", fields: [updatedById], references: [id])
+  
+  followers   User[]   @relation("TaskFollowers")
+  comments    TaskComment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([priority])
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  content   String
+  authorId  String
+  author    User     @relation("TaskCommentAuthor", fields: [authorId], references: [id])
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  parentId  String?
+  parent    TaskComment?  @relation("TaskCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   TaskComment[] @relation("TaskCommentReplies")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StorageFile {
+  id           String   @id @default(uuid())
+  filename     String
+  mimeType     String
+  size         Int
+  driver       String   // DATABASE, S3, GOOGLE_DRIVE, NAS
+  path         String   // S3 key, GDrive file ID, NAS file path, or base64 data string (if DATABASE)
+  entityType   String?  // SUPPORT_TICKET, VM_REQUEST, SERVICE_REQUEST, COMMENT
+  entityId     String?  // Associated entity ID
+  uploadedById String
+  uploadedBy   User     @relation("UserUploadedFiles", fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([driver])
+  @@index([entityId])
+}

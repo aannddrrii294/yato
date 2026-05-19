@@ -1,0 +1,715 @@
+"use client";
+
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileNav } from "@/components/MobileNav";
+import { Pagination } from "@/components/Pagination";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { 
+  Key, 
+  Plus, 
+  Search, 
+  Shield, 
+  Trash2, 
+  Loader2, 
+  Lock,
+  User as UserIcon,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  X,
+  ExternalLink,
+  Globe,
+  Tag,
+  Hash,
+  ChevronDown,
+  Edit3
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface Credential {
+  id: string;
+  name: string;
+  username?: string;
+  address?: string;
+  password?: string;
+  description?: string;
+  metadata?: Record<string, any>;
+  type: string;
+  tags: string[];
+  createdAt: string;
+}
+
+export default function CredentialsPage() {
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedCred, setSelectedCred] = useState<Credential | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [credToDelete, setCredToDelete] = useState<string | null>(null);
+  
+  const [showPassInForm, setShowPassInForm] = useState(false);
+  const [showPassInDetail, setShowPassInDetail] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  const [tagInput, setTagInput] = useState("");
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    address: "",
+    password: "",
+    description: "",
+    type: "SSH Key",
+    tags: [] as string[],
+    metadata: {} as Record<string, any>
+  });
+
+  const { data: credentials, isLoading } = useQuery<Credential[]>({
+    queryKey: ["credentials"],
+    queryFn: async () => {
+      const response = await api.get("/credentials/");
+      return response.data;
+    },
+  });
+
+  const { data: allTags } = useQuery<string[]>({
+    queryKey: ["credential-tags"],
+    queryFn: async () => {
+      const response = await api.get("/credentials/tags");
+      return response.data;
+    },
+  });
+
+  // Fetch Identity Types from Catalog
+  const { data: identityTypes } = useQuery({
+    queryKey: ["catalog", "IDENTITY_TYPE"],
+    queryFn: async () => {
+      const response = await api.get("/catalog?category=IDENTITY_TYPE");
+      return response.data.length > 0 ? response.data : [
+        { name: "SSH Key", value: "SSH Key", metadata: { customFields: [] } },
+        { name: "API Token", value: "API Token", metadata: { customFields: [] } },
+        { name: "Database Pass", value: "Database Pass", metadata: { customFields: [] } },
+        { name: "Cloud Secret", value: "Cloud Secret", metadata: { customFields: [] } }
+      ];
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (newCred: any) => api.post("/credentials/", newCred),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credentials"] });
+      queryClient.invalidateQueries({ queryKey: ["credential-tags"] });
+      setIsModalOpen(false);
+      resetForm();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`/credentials/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credentials"] });
+      queryClient.invalidateQueries({ queryKey: ["credential-tags"] });
+      setIsModalOpen(false);
+      resetForm();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/credentials/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credentials"] });
+      setIsDeleteModalOpen(false);
+      setCredToDelete(null);
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({ 
+      name: "", 
+      username: "", 
+      address: "", 
+      password: "", 
+      description: "",
+      type: identityTypes?.[0]?.value || "SSH Key", 
+      tags: [],
+      metadata: {}
+    });
+    setIsEditMode(false);
+    setSelectedCred(null);
+  };
+
+  const handleEdit = (cred: Credential) => {
+    setSelectedCred(cred);
+    setFormData({
+      name: cred.name,
+      username: cred.username || "",
+      address: cred.address || "",
+      description: cred.description || "",
+      password: "****************", // Masked on edit unless changed
+      type: cred.type,
+      tags: cred.tags,
+      metadata: cred.metadata || {}
+    });
+    setIsEditMode(true);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isEditMode && selectedCred) {
+      updateMutation.mutate({ id: selectedCred.id, data: formData });
+    } else {
+      addMutation.mutate(formData);
+    }
+  };
+
+  const handleAddTag = (tag: string) => {
+    const cleanTag = tag.trim().toLowerCase();
+    if (cleanTag && !formData.tags.includes(cleanTag)) {
+      setFormData({ ...formData, tags: [...formData.tags, cleanTag] });
+    }
+    setTagInput("");
+    setShowTagSuggestions(false);
+  };
+
+  const handleCopy = (text: string, field: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const filteredCredentials = credentials?.filter(cred => {
+    const s = search.toLowerCase();
+    return (
+      (cred.name?.toLowerCase() || "").includes(s) ||
+      (cred.username?.toLowerCase() || "").includes(s) ||
+      (cred.address?.toLowerCase() || "").includes(s) ||
+      (cred.tags?.some(t => t.toLowerCase().includes(s)) || false)
+    );
+  }) || [];
+
+  const totalPages = Math.ceil(filteredCredentials.length / itemsPerPage);
+  const paginatedCredentials = filteredCredentials.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const filteredTags = allTags?.filter(t => 
+    t.toLowerCase().includes(tagInput.toLowerCase()) && !formData.tags.includes(t)
+  );
+
+  return (
+    <div className="flex min-h-screen bg-background font-sans text-[13px]">
+      <MobileNav />
+      <Sidebar />
+      
+      <main className="page-container">
+        <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="page-title">Credential Vault</h1>
+            <p className="text-slate-400 text-[13px] font-bold uppercase tracking-widest mt-1">Secure identity and resource access management</p>
+          </div>
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="btn-primary flex items-center justify-center gap-2.5 px-6 shadow-xl shadow-blue-600/20"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-bold uppercase tracking-widest text-[11px]">Add Security Secret</span>
+          </button>
+        </header>
+
+        <div className="flex gap-3 mb-8">
+          <div className="relative flex-1 group">
+            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+            <input 
+              type="text" 
+              className="input-field pl-11 w-full bg-slate-50 border-slate-50 focus:bg-white transition-all shadow-none" 
+              placeholder="Search by name, user, IP or resource..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-50 rounded-2xl overflow-visible shadow-sm">
+          <div className="overflow-x-auto md:overflow-x-visible">
+            <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resource Name</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identity / Type</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target Address</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tags</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-32" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-24" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-40" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-20" /></td>
+                    <td className="px-6 py-4"><div className="h-8 bg-slate-100 rounded-lg w-16 ml-auto" /></td>
+                  </tr>
+                ))
+              ) : credentials?.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-24 text-center">
+                    <Key className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">No secrets found in vault</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedCredentials?.map((cred) => (
+                  <tr key={cred.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                          <Shield className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <p className="text-[13px] font-semibold text-slate-900">{cred.name}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-0.5">
+                        <p className="text-[12px] font-medium text-slate-700">{cred.username}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{cred.type}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-500 group/link relative">
+                        <Globe className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+                        {cred.address ? (
+                          <>
+                            <a 
+                              href={cred.address.startsWith('http') ? cred.address : `http://${cred.address}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-[12px] font-medium hover:text-blue-600 hover:underline transition-colors truncate max-w-[200px]"
+                            >
+                              {cred.address}
+                            </a>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(cred.address || "", `address-${cred.id}`);
+                              }}
+                              className="opacity-0 group-hover/link:opacity-100 p-1 bg-white hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-all ml-1 shadow-sm border border-slate-100"
+                              title="Copy Address"
+                            >
+                              {copiedField === `address-${cred.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-[12px] font-medium">---</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {cred.tags?.map(tag => (
+                          <span key={tag} className="text-[9px] font-bold text-indigo-500 bg-indigo-50/50 border border-indigo-100/50 px-2 py-0.5 rounded uppercase tracking-tighter">#{tag}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button 
+                          onClick={async () => {
+                            const res = await api.get(`/credentials/${cred.id}`);
+                            setSelectedCred(res.data);
+                            setIsDetailOpen(true);
+                          }}
+                          className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          title="View Secret"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleEdit(cred)}
+                          className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => { setCredToDelete(cred.id); setIsDeleteModalOpen(true); }}
+                          className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          </div>
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredCredentials.length}
+            itemsPerPage={itemsPerPage}
+          />
+        </div>
+      </main>
+
+      {/* Add/Edit Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto py-12">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-100 flex flex-col max-h-[90vh]"
+            >
+              <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30 shrink-0 rounded-t-[2.5rem]">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-xl shadow-blue-600/20">
+                    <Key className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900">{isEditMode ? "Edit Credential" : "Vault New Entry"}</h3>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Secure sensitive information</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-slate-200 rounded-2xl transition-all shadow-sm bg-white">
+                  <X className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden rounded-b-[2.5rem]">
+                <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <label>Credential Label</label>
+                    <input 
+                      type="text" 
+                      required
+                      className="input-field w-full py-2.5 bg-slate-50/50" 
+                      placeholder="e.g. Production AWS Key"
+                      autoComplete="off"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label>Target IP / Domain / Service <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span></label>
+                    <div className="relative group">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type="text" 
+                        className="input-field pl-12 w-full py-2.5 bg-slate-50/50" 
+                        placeholder="e.g. 192.168.1.100 or db.prod.internal"
+                        value={formData.address}
+                        onChange={e => setFormData({...formData, address: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label>Identity Type</label>
+                    <div className="relative group">
+                      <select 
+                        required
+                        className="input-field appearance-none bg-slate-50/50 w-full pr-10 py-2.5 font-bold"
+                        value={formData.type}
+                        onChange={e => setFormData({...formData, type: e.target.value})}
+                      >
+                        {identityTypes?.map((t: any) => (
+                          <option key={t.id || t.value} value={t.value}>{t.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label>Username / ID <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span></label>
+                    <div className="relative group">
+                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type="text" 
+                        className="input-field pl-12 w-full py-2.5 bg-slate-50/50"
+                        placeholder="admin"
+                        autoComplete="username"
+                        value={formData.username}
+                        onChange={e => setFormData({...formData, username: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label>Private Secret / Key</label>
+                    <div className="relative group">
+                      <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type="password" 
+                        required
+                        className="input-field pl-12 pr-11 w-full font-mono py-2.5 bg-slate-50/50"
+                        placeholder="••••••••••••••••"
+                        autoComplete="new-password"
+                        value={formData.password}
+                        onChange={e => setFormData({...formData, password: e.target.value})}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassInForm(!showPassInForm)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all"
+                      >
+                        {showPassInForm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Render Dynamic Custom Fields */}
+                  {identityTypes?.find((t: any) => t.value === formData.type)?.metadata?.customFields?.map((field: any, idx: number) => (
+                    <div key={idx} className="space-y-2 col-span-2">
+                      <label>{field.name} {field.isRequired ? "" : <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span>}</label>
+                      <input 
+                        type="text" 
+                        required={field.isRequired}
+                        className="input-field w-full py-2.5 bg-slate-50/50"
+                        placeholder={`Enter ${field.name}`}
+                        value={formData.metadata?.[field.name] || ""}
+                        onChange={e => setFormData({
+                          ...formData,
+                          metadata: { ...(formData.metadata || {}), [field.name]: e.target.value }
+                        })}
+                      />
+                    </div>
+                  ))}
+
+                  <div className="space-y-2 col-span-2">
+                    <label>Description / Notes</label>
+                    <textarea 
+                      className="input-field w-full py-2.5 bg-slate-50/50 resize-none h-16"
+                      placeholder="e.g. For accessing the main production DB"
+                      value={formData.description}
+                      onChange={e => setFormData({...formData, description: e.target.value})}
+                    />
+                  </div>
+
+
+                  <div className="space-y-2 col-span-2 relative">
+                    <label>Smart Tagging</label>
+                    <div className="relative group">
+                      <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <input 
+                        type="text" 
+                        className="input-field pl-12 w-full py-2.5 bg-slate-50/50"
+                        placeholder="Search or add tags..."
+                        value={tagInput}
+                        onChange={e => { setTagInput(e.target.value); setShowTagSuggestions(true); }}
+                        onKeyDown={e => { if(e.key === 'Enter') { e.preventDefault(); handleAddTag(tagInput); } }}
+                        onFocus={() => setShowTagSuggestions(true)}
+                      />
+                    </div>
+                    
+                    {/* Tag Suggestions Dropdown */}
+                    <AnimatePresence>
+                      {showTagSuggestions && filteredTags && filteredTags.length > 0 && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 max-h-48 overflow-y-auto p-2"
+                        >
+                          {filteredTags.map(tag => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handleAddTag(tag)}
+                              className="w-full text-left px-4 py-3 hover:bg-indigo-50 rounded-xl font-bold text-xs text-slate-600 flex items-center gap-2 transition-colors"
+                            >
+                              <Hash className="w-3.5 h-3.5 text-indigo-400" />
+                              {tag}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {formData.tags.map(tag => (
+                        <span 
+                          key={tag}
+                          className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase flex items-center gap-2 border border-indigo-100"
+                        >
+                          {tag}
+                          <button onClick={() => setFormData({...formData, tags: formData.tags.filter(t => t !== tag)})} className="hover:bg-indigo-100 p-0.5 rounded-md transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                </div>
+
+                <div className="p-8 pt-6 border-t border-slate-50 shrink-0 bg-white z-10 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+                  <button 
+                    type="submit" 
+                    disabled={addMutation.isPending || updateMutation.isPending}
+                    className="btn-primary w-full flex items-center justify-center gap-3 shadow-2xl shadow-blue-600/20"
+                  >
+                    {(addMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-5 h-5 animate-spin" /> : <Shield className="w-5 h-5" />}
+                    <span className="font-bold text-[11px] uppercase tracking-widest">{isEditMode ? "Save Changes" : "Commit to Secure Vault"}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {isDetailOpen && selectedCred && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md border border-white/20 flex flex-col max-h-[90vh]"
+            >
+              <div className="p-10 bg-slate-900 text-white relative shrink-0 rounded-t-[3rem]">
+                <button onClick={() => setIsDetailOpen(false)} className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+                  <X className="w-6 h-6" />
+                </button>
+                <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-600/40">
+                  <Key className="w-8 h-8" />
+                </div>
+                <h3 className="text-3xl font-bold tracking-tight mb-2">{selectedCred.name}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCred.tags.map(tag => (
+                    <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">#{tag}</span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-10 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Address</p>
+                      {selectedCred.address ? (
+                        <a href={selectedCred.address} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                          {selectedCred.address}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-bold text-slate-900">N/A</p>
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => handleCopy(selectedCred.address || "", 'address')}
+                      className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                    >
+                      {copiedField === 'address' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  </div>
+
+                  {selectedCred.description && (
+                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Description</p>
+                      <p className="text-sm text-slate-600 leading-relaxed font-medium">{selectedCred.description}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Username / Identity</p>
+                      <p className="text-sm font-bold text-slate-900">{selectedCred.username}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleCopy(selectedCred.username || "", 'username')}
+                      className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                    >
+                      {copiedField === 'username' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  </div>
+
+                  {/* Dynamic Custom Fields Rendering */}
+                  {selectedCred.metadata && Object.entries(selectedCred.metadata).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{key}</p>
+                        <p className="text-sm font-bold text-slate-900">{String(value)}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleCopy(String(value), key)}
+                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                      >
+                        {copiedField === key ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between p-5 bg-indigo-50/30 rounded-2xl border border-indigo-100 group">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Secure Secret</p>
+                      <p className="text-sm font-mono font-bold text-slate-900 break-all pr-4">
+                        {showPassInDetail ? selectedCred.password : "••••••••••••••••••••••••"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setShowPassInDetail(!showPassInDetail)}
+                        className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                      >
+                        {showPassInDetail ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                      <button 
+                        onClick={() => handleCopy(selectedCred.password || "", 'password')}
+                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                      >
+                        {copiedField === 'password' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <button 
+                    onClick={() => setIsDetailOpen(false)}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 transition-all"
+                  >
+                    Close Secure View
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => credToDelete && deleteMutation.mutate(credToDelete)}
+        title="Purge Credential?"
+        message="This action is irreversible. The secret will be permanently removed from the secure vault and all access will be lost."
+        confirmText="Yes, Purge Secret"
+        isLoading={deleteMutation.isPending}
+      />
+    </div>
+  );
+}

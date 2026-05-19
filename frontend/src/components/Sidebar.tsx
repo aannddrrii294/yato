@@ -1,0 +1,352 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { 
+  LayoutDashboard, 
+  Ticket,
+  Server, 
+  Box, 
+  Key, 
+  History, 
+  Users, 
+  Settings,
+  Terminal,
+  LogOut,
+  ChevronRight,
+  ShieldCheck,
+  Layers,
+  Activity,
+  Bell,
+  Loader2,
+  QrCode,
+  CheckSquare,
+  HardDrive
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
+import { useBranding } from "@/context/branding-context";
+
+const menuItems = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+  { icon: Ticket, label: "Ticket List", href: "/tickets" },
+  { icon: Box, label: "Service Inventory", href: "/service/inventory" },
+  { icon: Server, label: "VM Inventory", href: "/vm/inventory" },
+  { icon: Key, label: "Credentials", href: "/credentials" },
+  { icon: QrCode, label: "Asset Registry", href: "/assets" },
+  { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
+  { icon: HardDrive, label: "File Manager", href: "/files" },
+  { icon: History, label: "Audit Logs", href: "/audit" },
+  { icon: ShieldCheck, label: "Security & MFA", href: "/profile/security" },
+];
+
+const adminItems = [
+  { icon: Users, label: "User Management", href: "/admin/users" },
+  { icon: ShieldCheck, label: "Roles & Permissions", href: "/admin/roles" },
+  { icon: Settings, label: "System Config", href: "/admin/config" },
+];
+
+interface SidebarProps {
+  isMobile?: boolean;
+  onNavItemClick?: () => void;
+}
+
+export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { appName, appLogo } = useBranding();
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const { data: profile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const response = await api.get("/auth/profile");
+      return response.data;
+    },
+  });
+
+  const { data: notifications, isLoading: isLoadingNotifications } = useQuery<any>({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const response = await api.get("/notifications");
+      return response.data;
+    },
+    refetchInterval: 15000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/notifications/${id}/read`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => api.post("/notifications/read-all"),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const unreadCount = (notifications?.data || []).filter((n: any) => !n.isRead).length || 0;
+  const displayNotifications = notifications?.data || [];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("yato_token");
+    router.push("/login");
+  };
+
+  const userRoles = profile?.roles?.map((ur: any) => ur.role.name) || [];
+  const userPermissions = profile?.roles?.flatMap((ur: any) => ur.role.permissions || []) || [];
+  const isAdmin = userRoles.includes("ADMIN");
+
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true;
+    if (isAdmin) return true;
+    return userPermissions.includes(permission);
+  };
+
+  const sections = [
+    {
+      title: "Main Menu",
+      items: [
+        { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "VIEW_DASHBOARD" },
+        { icon: Ticket, label: "Support Tickets", href: "/tickets", permission: "VIEW_SUPPORT_TICKETS" },
+        { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
+      ]
+    },
+    {
+      title: "Infrastructure",
+      items: [
+        { icon: Server, label: "VM Instances", href: "/vm/inventory", permission: "VIEW_VM_INVENTORY" },
+        { icon: Layers, label: "Service Assets", href: "/service/inventory", permission: "VIEW_SERVICE_INVENTORY" },
+        { icon: Key, label: "Credential Vault", href: "/credentials", permission: "VIEW_CREDENTIALS" },
+      ]
+    },
+    {
+      title: "Management",
+      items: [
+        { icon: Server, label: "VM Inventory", href: "/admin/vm-inventory", permission: "MANAGE_VM_INVENTORY" },
+        { icon: Layers, label: "Service Assets Inventory", href: "/admin/service-inventory", permission: "MANAGE_SERVICE_INVENTORY" },
+        { icon: QrCode, label: "Asset Registry", href: "/assets", permission: "VIEW_ASSETS" },
+        { icon: HardDrive, label: "File Manager", href: "/files" },
+      ]
+    },
+    {
+      title: "System Control",
+      items: [
+        { icon: Activity, label: "System Status", href: "/admin/status", permission: "VIEW_SYSTEM_STATUS" },
+        { icon: History, label: "Log Activity", href: "/audit", permission: "VIEW_AUDIT_LOGS" },
+        { icon: Users, label: "User Management", href: "/admin/users", permission: "MANAGE_USERS" },
+        { icon: ShieldCheck, label: "Access Control", href: "/admin/roles", permission: "MANAGE_ROLES" },
+        { icon: Settings, label: "Platform Settings", href: "/admin/config", permission: "MANAGE_CONFIG" },
+      ]
+    }
+  ];
+
+  const filteredSections = sections.map(section => ({
+    ...section,
+    items: section.items.filter(item => hasPermission(item.permission))
+  })).filter(section => section.items.length > 0);
+
+  return (
+    <aside className={cn(
+      "w-60 bg-white h-screen flex flex-col shrink-0 border-r border-slate-100 z-50 sticky top-0",
+      !isMobile && "xl:flex hidden"
+    )}>
+      <div className="p-6 flex items-center gap-2.5">
+        {appLogo ? (
+          <img src={appLogo} alt="Logo" className="w-8 h-8 object-contain rounded-lg shadow-sm" />
+        ) : (
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <Box className="w-5 h-5 text-white" />
+          </div>
+        )}
+        <span className="font-bold text-lg text-slate-900 tracking-tight">{appName}</span>
+      </div>
+
+      <nav className="flex-1 px-3 py-4 space-y-7 overflow-y-auto custom-scrollbar">
+        {filteredSections.map((section: any) => (
+          <div key={section.title} className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{section.title}</p>
+            {section.items.map((item: any) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
+                  pathname === item.href 
+                    ? "bg-blue-50 text-blue-600 shadow-sm" 
+                    : "text-slate-500 hover:bg-slate-50/80 hover:text-slate-900"
+                )}
+              >
+                <item.icon className={cn("w-4 h-4", pathname === item.href ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600")} />
+                <span className="font-semibold text-[13px] tracking-tight">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      <div className="p-4 border-t border-slate-100 bg-slate-50/30">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={cn(
+                "p-2.5 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-white border border-transparent hover:border-slate-100 shadow-sm hover:shadow-md",
+                showNotifications && "bg-white border-slate-100 text-slate-900 shadow-md"
+              )}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                  className="absolute bottom-14 left-0 w-72 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-[100]"
+                >
+                    <div className="p-5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                      <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={() => markAllReadMutation.mutate()}
+                        className="text-[9px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {isLoadingNotifications ? (
+                      <div className="p-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-200" /></div>
+                    ) : displayNotifications?.length === 0 ? (
+                      <div className="p-10 text-center">
+                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                          <Bell className="w-6 h-6 text-slate-200" />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No New Alerts</p>
+                      </div>
+                    ) : (
+                      displayNotifications?.map((n: any) => (
+                        <div 
+                          key={n.id}
+                          className={cn("p-5 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer", !n.isRead && "bg-blue-50/30")}
+                          onClick={() => {
+                            if (!n.isRead) markReadMutation.mutate(n.id);
+                            if (n.link) router.push(n.link);
+                            setShowNotifications(false);
+                          }}
+                        >
+                          <div className="flex gap-4">
+                            <div className="mt-1">
+                              {n.type === 'SUCCESS' ? <div className="w-2 h-2 bg-emerald-500 rounded-full" /> : <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[11px] font-bold text-slate-900 leading-tight mb-1">{n.title}</p>
+                              <p className="text-[10px] text-slate-500 leading-normal">{n.message}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          {/* Theme/Other Quick Actions could go here */}
+          <div className="w-px h-4 bg-slate-200" />
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter italic">HermesOps v1.0</p>
+        </div>
+
+        <div className="relative" ref={profileRef}>
+          <button 
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className={cn(
+              "w-full flex items-center gap-3 p-3 rounded-2xl transition-all group border",
+              showProfileMenu 
+                ? "bg-white shadow-lg border-indigo-100" 
+                : "bg-white/50 hover:bg-white border-transparent hover:shadow-md hover:border-slate-100"
+            )}
+          >
+            <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-left overflow-hidden">
+              <p className="text-[12px] font-bold text-slate-900 truncate tracking-tight">{profile?.fullName || 'Administrator'}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">
+                {profile?.roles && profile.roles.length > 0 
+                  ? profile.roles.map((ur: any) => ur.role.name).join(', ') 
+                  : 'NO ROLES'}
+              </p>
+            </div>
+            <ChevronRight className={cn("w-4 h-4 text-slate-300 transition-transform", showProfileMenu && "rotate-90")} />
+          </button>
+
+          <AnimatePresence>
+            {showProfileMenu && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute bottom-[calc(100%+12px)] left-0 right-0 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-3 z-[100]"
+              >
+                <div className="px-5 py-4 mb-3 border-b border-slate-50 bg-slate-50/50 rounded-2xl">
+                  <p className="text-[11px] font-bold text-slate-900 leading-tight truncate">{profile?.fullName || 'Administrator'}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate mt-1">{profile?.email || 'admin@hermesops.com'}</p>
+                </div>
+                <div className="space-y-1">
+                  <Link 
+                    href="/profile" 
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all"
+                  >
+                    <Users className="w-4 h-4" />
+                    ACCOUNT SETTINGS
+                  </Link>
+                  <Link 
+                    href="/profile/security" 
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    SECURITY & MFA
+                  </Link>
+                  <div className="h-px bg-slate-100/50 my-2 mx-2" />
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    SIGN OUT
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </aside>
+  );
+}

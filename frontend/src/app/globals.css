@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #64748b;
+  --sidebar-active-bg: #f8fafc;
+  --sidebar-active-text: #2563eb;
+  --background: #ffffff;
+  --card-bg: #ffffff;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --border: #f1f5f9;
+  --text-main: #334155;
+  --text-muted: #64748b;
+  --text-heading: #0f172a;
+}
+
+@layer base {
+  * {
+    @apply border-slate-100;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply text-slate-600 bg-white antialiased text-[13px] selection:bg-blue-100 selection:text-blue-900 leading-normal;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  h1 { 
+    @apply text-3xl font-bold tracking-tight text-slate-900 mb-2; 
+    letter-spacing: -0.03em;
+  }
+  
+  h2 { 
+    @apply text-xl font-bold tracking-tight text-slate-900 mb-1.5;
+    letter-spacing: -0.02em;
+  }
+  
+  h3 { 
+    @apply text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2; 
+  }
+  
+  p {
+    @apply text-slate-500 leading-normal;
+  }
+  
+  label { 
+    @apply text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block; 
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+    @apply text-[13px] font-medium text-slate-900;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply flex-1 p-8 pt-24 xl:pt-8;
+  }
+
+  .content-max-width {
+    @apply max-w-[1200px] mx-auto;
+  }
+
+  /* Standardized Page Headers */
+  .page-title {
+    font-family: 'Outfit', sans-serif;
+    @apply text-xl md:text-2xl font-bold text-slate-800 tracking-tight leading-tight;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    @apply text-slate-400 font-medium text-[12px] md:text-[13px] mt-1.5 max-w-2xl uppercase tracking-wider;
+  }
+
+  /* Consistent Card System */
+  .glass-card {
+    @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-8 transition-all duration-300;
+  }
+
+  /* Standardized Buttons */
+  .btn-base {
+    @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn-base bg-blue-600 text-white shadow-xl shadow-blue-600/10 hover:bg-blue-700 hover:shadow-blue-600/20;
+  }
+
+  .btn-secondary {
+    @apply btn-base bg-white border border-slate-200 text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900;
+  }
+
+  .btn-danger {
+    @apply btn-base bg-rose-500 text-white shadow-xl shadow-rose-500/10 hover:bg-rose-600 hover:shadow-rose-500/20;
+  }
+
+  .btn-ghost {
+    @apply btn-base bg-transparent text-slate-400 hover:bg-slate-50 hover:text-slate-600;
+  }
+
+  /* Unified Inputs */
+  .input-field {
+    @apply bg-slate-50 border border-slate-100 rounded-lg px-4 py-2.5 text-[13px] font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 placeholder:font-medium;
+  }
+
+  .select-field {
+    @apply input-field appearance-none pr-10 bg-no-repeat bg-[right_1rem_center] bg-[length:1rem_1rem];
+  }
+
+  /* Status Badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.1em] border;
+  }
+}
+
+/* Custom Scrollbar Premium */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full border-[2px] border-transparent bg-clip-content hover:bg-slate-300; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }
+
