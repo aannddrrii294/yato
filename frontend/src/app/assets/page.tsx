@@ -465,7 +465,7 @@ export default function AssetsPage() {
                         <div className="flex flex-col gap-0.5">
                           <span className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5 uppercase">
                             <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                            {asset.owner?.fullName || 'HermesOps Shared'}
+                            {asset.owner?.fullName || 'YATO Shared'}
                           </span>
                           {asset.owner?.email && (
                             <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
@@ -752,7 +752,7 @@ export default function AssetsPage() {
                         value={formData.ownerId}
                         onChange={(e) => setFormData({...formData, ownerId: e.target.value})}
                       >
-                        <option value="">No Owner (HermesOps Infrastructure Shared)</option>
+                        <option value="">No Owner (YATO Infrastructure Shared)</option>
                         {allUsers?.map((user: any) => (
                           <option key={user.id} value={user.id}>{user.fullName} ({user.email})</option>
                         ))}
@@ -890,7 +890,7 @@ export default function AssetsPage() {
                   </div>
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Owner / Person in Charge</span>
-                    <span className="text-sm font-bold text-slate-800 block mt-1">{selectedAsset.owner?.fullName || 'HermesOps Shared'}</span>
+                    <span className="text-sm font-bold text-slate-800 block mt-1">{selectedAsset.owner?.fullName || 'YATO Shared'}</span>
                   </div>
                   <div className="space-y-1">
                     <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Status</span>
