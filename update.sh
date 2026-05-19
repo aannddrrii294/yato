@@ -10,7 +10,7 @@ RED='\033[0-31m'
 
 # Check Prerequisites
 check_dependency() {
-    if ! command -v $1 &> /dev/null; then
+    if ! command -v $1 >/dev/null 2>&1; then
         echo -e "${RED}Error: $1 is not installed.${NC}" >&2
         return 1
     fi
