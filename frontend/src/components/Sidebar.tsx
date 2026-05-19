@@ -330,7 +330,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
               >
                 <div className="px-5 py-4 mb-3 border-b border-slate-50 bg-slate-50/50 rounded-2xl">
                   <p className="text-[11px] font-bold text-slate-900 leading-tight truncate">{profile?.fullName || 'Administrator'}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate mt-1">{profile?.email || 'admin@hermesops.com'}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate mt-1">{profile?.email || 'admin@honet.web.id'}</p>
                 </div>
                 <div className="space-y-1">
                   <Link 
