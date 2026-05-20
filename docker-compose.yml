@@ -62,7 +62,7 @@ services:
     container_name: yato-plugin-proxmox
     restart: always
     ports:
-      - "5001:5001"
+      - "5010:5001"
 
   nginx:
     image: nginx:alpine
