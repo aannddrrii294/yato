@@ -33,7 +33,8 @@ import {
   CornerDownRight,
   Share2,
   Link2,
-  UserPlus
+  UserPlus,
+  Edit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,19 @@ export default function TasksPage() {
   const TASK_TYPES = catalogTaskTypes && catalogTaskTypes.length > 0
     ? catalogTaskTypes.map(c => c.value)
     : ["TASK", "TROUBLESHOOT", "UPDATE", "BACKUP"];
+
+  // State for Task Templates
+  const [isTemplateEditorOpen, setIsTemplateEditorOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [templateForm, setTemplateForm] = useState({
+    templateName: "",
+    title: "",
+    description: "",
+    priority: "MEDIUM",
+    taskType: "TASK",
+    checklist: [] as any[],
+    repeatInterval: "NONE"
+  });
 
   // State for Create Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -179,6 +193,69 @@ export default function TasksPage() {
     queryFn: async () => {
       const res = await api.get("/tasks");
       return res.data;
+    }
+  });
+
+  // Fetch all templates
+  const { data: templates } = useQuery<any[]>({
+    queryKey: ["task-templates"],
+    queryFn: async () => {
+      const res = await api.get("/tasks/templates");
+      return res.data;
+    }
+  });
+
+  // Create Template Mutation
+  const createTemplateMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await api.post("/tasks/templates", payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task-templates"] });
+      setIsTemplateEditorOpen(false);
+    }
+  });
+
+  // Update Template Mutation
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: any }) => {
+      const res = await api.patch(`/tasks/templates/${id}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task-templates"] });
+      setIsTemplateEditorOpen(false);
+    }
+  });
+
+  // Delete Template Mutation
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/tasks/templates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task-templates"] });
+    }
+  });
+
+  // Use Template Mutation (creates a task from a template)
+  const useTemplateMutation = useMutation({
+    mutationFn: async (template: any) => {
+      const payload = {
+        title: template.title || "New Task from Template",
+        description: template.description || "",
+        status: "NOT_STARTED",
+        priority: template.priority || "MEDIUM",
+        taskType: template.taskType || "TASK",
+        checklist: template.checklist || [],
+      };
+      const res = await api.post("/tasks", payload);
+      return res.data;
+    },
+    onSuccess: (newTask) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      setSelectedTask(newTask); // Open detail drawer automatically!
     }
   });
 
@@ -309,6 +386,58 @@ export default function TasksPage() {
       queryClient.invalidateQueries({ queryKey: ["task-detail", selectedTask?.id] });
     }
   });
+
+  const handleCreateTemplateStart = () => {
+    setEditingTemplateId(null);
+    setTemplateForm({
+      templateName: "Monitoring Activity",
+      title: "New task",
+      description: "",
+      priority: "MEDIUM",
+      taskType: "TASK",
+      checklist: [],
+      repeatInterval: "NONE"
+    });
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleEditTemplateStart = (template: any) => {
+    setEditingTemplateId(template.id);
+    setTemplateForm({
+      templateName: template.templateName,
+      title: template.title,
+      description: template.description || "",
+      priority: template.priority || "MEDIUM",
+      taskType: template.taskType || "TASK",
+      checklist: template.checklist || [],
+      repeatInterval: template.repeatInterval || "NONE"
+    });
+    setIsTemplateEditorOpen(true);
+  };
+
+  const handleSaveTemplate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!templateForm.templateName.trim() || !templateForm.title.trim()) return;
+
+    if (editingTemplateId) {
+      updateTemplateMutation.mutate({
+        id: editingTemplateId,
+        payload: templateForm
+      });
+    } else {
+      createTemplateMutation.mutate(templateForm);
+    }
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteTemplateMutation.mutate(id);
+    }
+  };
+
+  const handleUseTemplate = (template: any) => {
+    useTemplateMutation.mutate(template);
+  };
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -542,15 +671,82 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <button 
-              onClick={() => {
-                setPreselectedStatus("NOT_STARTED");
-                setIsCreateOpen(true);
-              }}
-              className="btn-primary"
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> New Task
-            </button>
+            <div className="flex items-center">
+              <button 
+                onClick={() => {
+                  setPreselectedStatus("NOT_STARTED");
+                  setIsCreateOpen(true);
+                }}
+                className="btn-primary rounded-r-none border-r border-blue-600/30 flex items-center h-10"
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> New Task
+              </button>
+              
+              <div className="relative group/template-dd flex h-10">
+                <button 
+                  type="button"
+                  className="btn-primary rounded-l-none px-2.5 flex items-center justify-center h-10 cursor-pointer"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                
+                {/* Templates Dropdown Menu */}
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200/80 rounded-2xl shadow-2xl p-2.5 z-[100] opacity-0 pointer-events-none group-focus-within/template-dd:opacity-100 group-focus-within/template-dd:pointer-events-auto transition-all space-y-1.5">
+                  <div className="px-3 py-1.5 border-b border-slate-100/60 flex items-center justify-between">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Templates</span>
+                    <button 
+                      type="button"
+                      onClick={() => handleCreateTemplateStart()}
+                      className="text-[9px] font-extrabold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/50 px-2.5 py-1 rounded-lg uppercase transition-all duration-200 active:scale-95 cursor-pointer"
+                    >
+                      + New Template
+                    </button>
+                  </div>
+                  
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar py-1 space-y-1">
+                    {!templates || templates.length === 0 ? (
+                      <div className="text-center py-5 text-slate-400 text-[10px] font-semibold uppercase tracking-wider">
+                        No templates found
+                      </div>
+                    ) : (
+                      templates.map((t: any) => (
+                        <div key={t.id} className="flex items-center justify-between hover:bg-slate-50/70 rounded-xl px-2.5 py-1.5 group/item transition-all duration-150">
+                          <button
+                            type="button"
+                            onClick={() => handleUseTemplate(t)}
+                            className="flex-1 text-left text-[11px] font-bold text-slate-700 hover:text-blue-600 transition-colors truncate pr-2 cursor-pointer"
+                          >
+                            <span className="bg-amber-100/60 text-amber-800 text-[8px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded mr-2 border border-amber-200/40">
+                              Blueprint
+                            </span>
+                            {t.templateName}
+                          </button>
+                          
+                          <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => handleEditTemplateStart(t)}
+                              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                              title="Edit Template Blueprint"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTemplate(t.id)}
+                              className="p-1 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                              title="Delete Template Blueprint"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* Content Area */}
@@ -964,6 +1160,199 @@ export default function TasksPage() {
                       className="btn-primary"
                     >
                       Create Task
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* ==================== TASK TEMPLATE EDITOR MODAL ==================== */}
+        <AnimatePresence>
+          {isTemplateEditorOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-sm">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              >
+                {/* Notion Style Golden Yellow Banner Ribbon */}
+                <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center justify-between text-amber-800 gap-3">
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <span className="animate-pulse w-2 h-2 bg-amber-500 rounded-full" />
+                    <span>You're editing a template in</span>
+                    <span className="bg-amber-500/20 text-amber-900 px-2.5 py-1 rounded-lg flex items-center gap-1 border border-amber-500/20">
+                      <Check className="w-3.5 h-3.5 text-amber-700 stroke-[3]" />
+                      <input 
+                        type="text"
+                        value={templateForm.templateName}
+                        onChange={(e) => setTemplateForm(prev => ({ ...prev, templateName: e.target.value }))}
+                        className="bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-xs font-black text-amber-900 w-36 outline-none"
+                        placeholder="Template Name..."
+                      />
+                    </span>
+                    <span 
+                      className="text-amber-600/70 hover:text-amber-800 cursor-help font-bold text-xs" 
+                      title="Templates are blueprints used to create tasks. Changes here will not affect existing tasks."
+                    >
+                      [?]
+                    </span>
+                  </div>
+                  
+                  {/* Repeat configuration */}
+                  <div className="flex items-center gap-1 text-[11px] font-bold">
+                    <div className="relative group/repeat">
+                      <button 
+                        type="button" 
+                        className="bg-white border border-amber-200 hover:bg-amber-50 text-amber-900 px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                      >
+                        <span className="text-[10px]">
+                          {templateForm.repeatInterval === "NONE" && "Don't repeat"}
+                          {templateForm.repeatInterval === "DAILY" && "Repeat: Daily"}
+                          {templateForm.repeatInterval === "WEEKLY" && "Repeat: Weekly"}
+                          {templateForm.repeatInterval === "MONTHLY" && "Repeat: Monthly"}
+                        </span>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="absolute right-0 top-full mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-xl p-1 z-[110] opacity-0 pointer-events-none group-focus-within/repeat:opacity-100 group-focus-within/repeat:pointer-events-auto transition-all">
+                        {[
+                          { id: "NONE", label: "Don't repeat" },
+                          { id: "DAILY", label: "Daily" },
+                          { id: "WEEKLY", label: "Weekly" },
+                          { id: "MONTHLY", label: "Monthly" }
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setTemplateForm(prev => ({ ...prev, repeatInterval: opt.id }))}
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 rounded-lg text-[10px] font-bold text-slate-700 flex items-center justify-between cursor-pointer"
+                          >
+                            <span>{opt.label}</span>
+                            {templateForm.repeatInterval === opt.id && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveTemplate} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Default Task Title Blueprint</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="e.g. Daily server backup review"
+                      value={templateForm.title}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="input-field w-full bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Default Description</label>
+                    <textarea 
+                      placeholder="Enter the template's default description here..."
+                      value={templateForm.description}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="input-field w-full min-h-[80px] bg-white resize-none font-medium"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Default Priority</label>
+                      <div className="relative">
+                        <select 
+                          value={templateForm.priority}
+                          onChange={(e) => setTemplateForm(prev => ({ ...prev, priority: e.target.value }))}
+                          className="input-field pr-10 w-full bg-white cursor-pointer appearance-none"
+                        >
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                        </select>
+                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Default Task Type</label>
+                      <div className="relative">
+                        <select 
+                          value={templateForm.taskType}
+                          onChange={(e) => setTemplateForm(prev => ({ ...prev, taskType: e.target.value }))}
+                          className="input-field pr-10 w-full bg-white cursor-pointer appearance-none"
+                        >
+                          {TASK_TYPES.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Checklist blueprint section */}
+                  <div className="space-y-2 pt-2 border-t border-slate-50">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Default Checklist Blueprint</label>
+                    <div className="space-y-2">
+                      {templateForm.checklist.map((item, idx) => (
+                        <div key={item.id || idx} className="flex items-center gap-2.5 bg-slate-50/70 border border-slate-100 p-2.5 rounded-xl transition-all">
+                          <div className="w-4 h-4 border border-slate-300 rounded" />
+                          <input 
+                            type="text"
+                            value={item.text}
+                            placeholder="Type checklist item..."
+                            onChange={(e) => {
+                              const newCl = [...templateForm.checklist];
+                              newCl[idx].text = e.target.value;
+                              setTemplateForm(prev => ({ ...prev, checklist: newCl }));
+                            }}
+                            className="flex-1 bg-transparent text-[11px] font-bold focus:outline-none border-none p-0 focus:ring-0 text-slate-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newCl = templateForm.checklist.filter((_, i) => i !== idx);
+                              setTemplateForm(prev => ({ ...prev, checklist: newCl }));
+                            }}
+                            className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTemplateForm(prev => ({
+                            ...prev,
+                            checklist: [...prev.checklist, { id: Math.random().toString(), text: "", isDone: false }]
+                          }));
+                        }}
+                        className="w-full text-left p-2.5 bg-slate-50/30 hover:bg-slate-50 border border-dashed border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add checklist item blueprint
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsTemplateEditorOpen(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn-primary bg-amber-500 border-amber-600 hover:bg-amber-600 focus:ring-amber-500/20 text-white"
+                    >
+                      {editingTemplateId ? "Save Blueprint Changes" : "Create Template Blueprint"}
                     </button>
                   </div>
                 </form>

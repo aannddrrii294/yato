@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateTaskDto, UpdateTaskDto, CreateTaskCommentDto } from './dto/task.dto';
+import { CreateTaskDto, UpdateTaskDto, CreateTaskCommentDto, CreateTaskTemplateDto, UpdateTaskTemplateDto } from './dto/task.dto';
 import { StorageService } from '../storage/storage.service';
 import { NotificationService } from '../notification/notification.service';
 
@@ -555,5 +555,62 @@ export class TaskService {
 
   async removeAttachment(fileId: string) {
     return this.storageService.deleteFile(fileId);
+  }
+
+  async findAllTemplates(userId: string) {
+    return this.prisma.taskTemplate.findMany({
+      where: { createdById: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneTemplate(id: string) {
+    const template = await this.prisma.taskTemplate.findUnique({
+      where: { id },
+    });
+    if (!template) {
+      throw new NotFoundException(`Task template with ID ${id} not found`);
+    }
+    return template;
+  }
+
+  async createTemplate(dto: CreateTaskTemplateDto, creatorId: string) {
+    return this.prisma.taskTemplate.create({
+      data: {
+        templateName: dto.templateName,
+        title: dto.title,
+        description: dto.description || '',
+        priority: dto.priority || 'MEDIUM',
+        taskType: dto.taskType || 'TASK',
+        checklist: dto.checklist || [],
+        repeatInterval: dto.repeatInterval || 'NONE',
+        createdById: creatorId,
+      },
+    });
+  }
+
+  async updateTemplate(id: string, dto: UpdateTaskTemplateDto) {
+    await this.findOneTemplate(id);
+
+    const data: any = {};
+    if (dto.templateName !== undefined) data.templateName = dto.templateName;
+    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.priority !== undefined) data.priority = dto.priority;
+    if (dto.taskType !== undefined) data.taskType = dto.taskType;
+    if (dto.checklist !== undefined) data.checklist = dto.checklist;
+    if (dto.repeatInterval !== undefined) data.repeatInterval = dto.repeatInterval;
+
+    return this.prisma.taskTemplate.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteTemplate(id: string) {
+    await this.findOneTemplate(id);
+    return this.prisma.taskTemplate.delete({
+      where: { id },
+    });
   }
 }

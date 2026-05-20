@@ -52,6 +52,7 @@ model User {
   followedTasks     Task[]         @relation("TaskFollowers")
   updatedTasks      Task[]         @relation("UserUpdatedTasks")
   taskComments      TaskComment[]  @relation("TaskCommentAuthor")
+  createdTemplates  TaskTemplate[] @relation("UserCreatedTemplates")
   uploadedFiles     StorageFile[]  @relation("UserUploadedFiles")
 }
 
@@ -432,6 +433,23 @@ model TaskComment {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TaskTemplate {
+  id             String   @id @default(uuid())
+  templateName   String   // The custom name of the template (e.g. "Monitoring Activity")
+  title          String   // Default title of tasks created from this template
+  description    String?
+  priority       String   @default("MEDIUM")      // LOW, MEDIUM, HIGH
+  taskType       String   @default("TASK")        // TASK, TROUBLESHOOT, UPDATE, BACKUP
+  checklist      Json?    // Subtask items stored as JSON: [{ id, text, isDone }]
+  repeatInterval String?  // NONE, DAILY, WEEKLY, MONTHLY
+
+  createdById    String
+  createdBy      User     @relation("UserCreatedTemplates", fields: [createdById], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model StorageFile {

@@ -112,3 +112,61 @@ export class CreateTaskCommentDto {
   @Type(() => CommentAttachmentDto)
   attachments?: CommentAttachmentDto[];
 }
+
+export class CreateTaskTemplateDto {
+  @IsString()
+  @IsNotEmpty()
+  templateName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  priority?: string;
+
+  @IsString()
+  @IsOptional()
+  taskType?: string;
+
+  @IsOptional()
+  checklist?: any;
+
+  @IsString()
+  @IsOptional()
+  repeatInterval?: string;
+}
+
+export class UpdateTaskTemplateDto {
+  @IsString()
+  @IsOptional()
+  templateName?: string;
+
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  priority?: string;
+
+  @IsString()
+  @IsOptional()
+  taskType?: string;
+
+  @IsOptional()
+  checklist?: any;
+
+  @IsString()
+  @IsOptional()
+  repeatInterval?: string;
+}
