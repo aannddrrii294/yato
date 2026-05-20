@@ -319,7 +319,12 @@ function TicketsContent() {
       if (selectedTicketForAction.type === 'VM') {
         await vmApproveMutation.mutateAsync({ 
           id: selectedTicketForAction.id, 
-          data: approveData.ipAddress ? approveData : {} 
+          data: approveData.ipAddress ? {
+            ipAddress: approveData.ipAddress,
+            sshPort: parseInt(approveData.sshPort) || 22,
+            sshUser: approveData.sshUser,
+            sshPassword: approveData.sshPassword
+          } : {} 
         });
       } else if (selectedTicketForAction.type === 'SERVICE') {
         await svcApproveMutation.mutateAsync({
