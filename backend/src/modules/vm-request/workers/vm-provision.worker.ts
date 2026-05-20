@@ -85,17 +85,21 @@ export class VmProvisionWorker extends WorkerHost {
             }
           });
 
-        } catch (pluginError) {
-          const errMsg = pluginError.response?.data?.message || pluginError.message;
+        } catch (pluginError: any) {
+          const errMsg = pluginError?.response?.data?.message || pluginError?.message || String(pluginError);
           this.logger.error(`[Plugin Engine] Connection error with plugin: ${errMsg}`);
           
-          await this.prisma.ticketComment.create({
-            data: {
-              content: `⚠️ <b>[Plugin Engine Error]</b> Driver <b>${integration.name}</b> failed to provision: <code>${errMsg}</code>. Reverting and failing task.`,
-              vmRequestId: requestId,
-              authorId: vmRequest.requestedBy,
-            }
-          });
+          try {
+            await this.prisma.ticketComment.create({
+              data: {
+                content: `⚠️ <b>[Plugin Engine Error]</b> Driver <b>${integration.name}</b> failed to provision: <code>${errMsg}</code>. Reverting and failing task.`,
+                vmRequestId: requestId,
+                authorId: vmRequest.requestedBy,
+              }
+            });
+          } catch (commentErr: any) {
+            this.logger.error(`Failed to create plugin error ticket comment: ${commentErr.message}`);
+          }
 
           throw new Error(`Plugin provision failed: ${errMsg}`);
         }
@@ -125,9 +129,26 @@ export class VmProvisionWorker extends WorkerHost {
       });
 
       this.logger.log(`VM provisioning completed for ${hostname}. IP Assigned: ${ipAddress}`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`VM provisioning failed for ${requestId}`, error.stack);
       
+      try {
+        const vmRequest = await this.prisma.vMRequest.findUnique({
+          where: { id: requestId },
+        });
+        if (vmRequest) {
+          await this.prisma.ticketComment.create({
+            data: {
+              content: `❌ <b>[System Error]</b> Provisioning failed: <code>${error.message || error}</code>`,
+              vmRequestId: requestId,
+              authorId: vmRequest.requestedBy,
+            }
+          });
+        }
+      } catch (commentErr: any) {
+        this.logger.error(`Failed to create system error ticket comment: ${commentErr.message}`);
+      }
+
       await this.prisma.vMRequest.update({
         where: { id: requestId },
         data: { status: 'FAILED' },
