@@ -5,12 +5,15 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { winstonLogger } from './common/logger/winston.config';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { AuditContextService } from './common/context/audit-context.service';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: winstonLogger,
+  });
 
   // Enable Graceful Shutdown for Background Workers and Queues
   app.enableShutdownHooks();
