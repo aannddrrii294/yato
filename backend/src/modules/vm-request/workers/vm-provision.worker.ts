@@ -59,8 +59,17 @@ export class VmProvisionWorker extends WorkerHost {
             }
           });
 
+          // Construct endpoint URL safely
+          let targetUrl = integration.endpointUrl.trim();
+          if (targetUrl.endsWith('/')) {
+            targetUrl = targetUrl.slice(0, -1);
+          }
+          if (!targetUrl.endsWith('/provision')) {
+            targetUrl = `${targetUrl}/provision`;
+          }
+
           // Dispatch provisioning request to dynamic plugin container with 15-second timeout
-          const pluginRes = await axios.post(`${integration.endpointUrl}/provision`, {
+          const pluginRes = await axios.post(targetUrl, {
             requestId,
             ticketId: vmRequest.ticketId,
             hostname,
