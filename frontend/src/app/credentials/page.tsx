@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { Pagination } from "@/components/Pagination";
 import { ConfirmationModal } from "@/components/ConfirmationModal";
+import { PageHeader } from "@/components/PageHeader";
 import { 
   Key, 
   Plus, 
@@ -227,8 +228,7 @@ export default function CredentialsPage() {
       <main className="page-container">
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="page-title">Credential Vault</h1>
-            <p className="text-slate-400 text-[13px] font-bold uppercase tracking-widest mt-1">Secure identity and resource access management</p>
+            <PageHeader title="Credential Vault" subtitle="Secure identity and resource access management" />
           </div>
           <button 
             onClick={() => { resetForm(); setIsModalOpen(true); }}
