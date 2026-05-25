@@ -1,6 +1,6 @@
 "use client";
-import { PageHeader } from "@/components/PageHeader";
 
+import { PageHeader } from "@/components/PageHeader";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
@@ -71,10 +71,14 @@ export default function NotificationsPage() {
     const diff = now.getTime() - date.getTime();
     
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins} mins ago`;
+    if (60 > mins) {
+      return `${mins} mins ago`;
+    }
     
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} hours ago`;
+    if (24 > hours) {
+      return `${hours} hours ago`;
+    }
     
     return date.toLocaleDateString();
   };
