@@ -57,10 +57,15 @@ function processFile(filePath) {
 
   // Preserve Next.js "use client" or "use server" directives at the absolute top if present
   let prefix = '';
-  const match = content.match(/^("use client"|"use server");?\r?\n/);
+  const trimmedContent = content.trimStart();
+  const match = trimmedContent.match(/^("use client"|'use client'|"use server"|'use server');?\r?\n/);
   if (match) {
     prefix = match[0];
-    content = content.substring(prefix.length);
+    // Remove the directive from the original content (accounting for leading whitespace)
+    const directiveIndex = content.indexOf(match[0].trimEnd());
+    if (directiveIndex !== -1) {
+      content = content.substring(directiveIndex + match[0].length);
+    }
   }
 
   const updatedContent = prefix + COPYRIGHT_HEADER + content;
