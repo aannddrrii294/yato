@@ -75,6 +75,82 @@ True to its namesake, the **YATO Platform** acts as the ultimate, dedicated "hel
 
 ---
 
+## 📐 Technical Architecture & Design Specifications
+
+### 🖥️ 1. System Architecture Design
+The YATO Platform uses a highly resilient, isolated, and proxy-secured multi-tier architecture to deliver instant support feeds, secure enterprise credentials, and map critical datacenter assets:
+
+```mermaid
+graph TD
+    %% Clients
+    User([👤 Administrator / Support Agent]) -->|Accesses Portal: Port 9090| Nginx[🔒 Nginx Gateway Proxy]
+
+    %% Routing
+    subgraph "DMZ & Gateway Router"
+        Nginx -->|Routes static pages & UI| Frontend[🌐 Next.js Portal - Port 4001]
+        Nginx -->|Routes REST API & Websockets| Backend[🚀 NestJS Backend API - Port 4000]
+    end
+
+    %% Application Tier
+    subgraph "Application Logic & Middleware Services"
+        Backend -->|Access Control| Guards[🛡️ RBAC / MFA Guards]
+        Backend -->|Crypto Vault| Envelope[🔐 Envelope Cryptography Engine]
+        Backend -->|Audit Logs| Audit[📋 Immutable Audit Logger]
+        Backend -->|Task Scheduler| Queue[📦 BullMQ Job Queue]
+    end
+
+    %% Infrastructure Tier
+    subgraph "Infrastructure & Cache State"
+        Database[(🗄️ PostgreSQL 15 - DB Store)]
+        Redis[(⚡ Redis 7 - Session & Queue Store)]
+    end
+
+    %% Database integrations
+    Backend -->|Type-safe queries| Database
+    Queue <-->|Job tracking| Redis
+    Backend <-->|Cache / Queue triggers| Redis
+
+    %% External Gateways
+    subgraph "Integrations & Connectors"
+        WAHA[💬 WhatsApp WAHA Gateway]
+        SMTP[📧 SMTP Mail Server]
+        Telegram[✈️ Telegram API Bot]
+    end
+
+    Backend -->|Notification dispatch| WAHA
+    Backend -->|System alerts / transactional mail| SMTP
+    Backend -->|Instant alert alerts| Telegram
+```
+
+---
+
+### 🗄️ 2. Database Design & Security Specifications
+To protect sensitive credentials and maintain transaction logs, YATO implements strict database design rules:
+
+#### A. AES-256 Envelope Cryptography (Vault Security)
+All credentials (passwords, tokens, SSH keys) inside the `Credential` table are never stored in raw text. They are protected using dynamic **Envelope Encryption**:
+1. **Master KEK:** A secure 32-character key generated during installation (`ENCRYPTION_KEY` in `.env`) acts as the Master Key Encrypting Key.
+2. **Dynamic DEKs:** Every time a credential is created, a unique, random Data Encryption Key (DEK) is generated. The credential data is encrypted using this DEK (AES-256-GCM).
+3. **Double wrapping:** The DEK itself is encrypted using the Master KEK and stored alongside the encrypted payload in the database.
+4. **Key Rotation:** Running the KEK rotation updates the keyring, decrypts all DEKs with the old KEK, and re-wraps them with the new KEK seamlessly.
+
+#### B. Immutable Audit Trail & Lockouts
+* **`AuditLog`:** Logs every state mutation, authentication check, and credential access. Once created, these records are never updated or deleted by the application (enforced by NestJS interceptors).
+* **`LoginHistory`:** Captures successful and unsuccessful authentication events, mapping IP Addresses and client User-Agent headers.
+* **Lockout Mechanics:** When standard login validation fails continuously (limit of 5 consecutive times), the `failedLoginAttempts` counter increment triggers an automated lockout timestamp (`lockoutUntil`), blocking further requests for 15 minutes to defeat brute-force attempts.
+
+---
+
+### 🎨 3. Visual & UI Design Specifications
+YATO follows a premium, high-contrast, modern UI specification designed for optimal usability and legibility:
+
+* **Typography System:** Leverages the **Inter** font family (Google Fonts) for structure and tabular data, using varying font weights (`font-bold`, `font-semibold`) and clear sizes (`text-sm`, `text-[11px]`) to establish deep hierarchy.
+* **Color Contrast Standard (WCAG 2.1 Compliant):**
+  * **White Backgrounds:** Sub-text and table headers leverage `text-slate-600` and secondary tags use `text-slate-500` to guarantee a readability ratio exceeding `4.5:1` against white backgrounds (`bg-white` / `bg-slate-50`).
+  * **Accents:** Highlights and active navigation links use rich Cobalt Blue (`bg-blue-600` / `text-blue-600`) and Deep Purple (`text-indigo-600`).
+  * **Alerts & States:** Success states use Emerald green (`bg-emerald-50` / `text-emerald-600`), and pending or warned alerts use Amber orange (`bg-amber-50` / `text-amber-600`).
+* **Glassmorphism Panels:** Core dashboard panels utilize soft borders (`border-slate-100`), backing shadows (`shadow-sm`), and translucent gradients to deliver a lightweight, high-end visual workspace.
+
 ## ⚙️ System Specifications & Requirements
 
 YATO can be deployed modularly on different systems depending on the production requirements.
