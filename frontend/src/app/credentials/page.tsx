@@ -341,9 +341,11 @@ export default function CredentialsPage() {
                           onClick={async () => {
                             const res = await api.get(`/credentials/${cred.id}`);
                             setSelectedCred(res.data);
-                            setShowPassInDetail(false);
-                            setSecretVerified(false);
-                            setIsDetailOpen(true);
+                            // Trigger verification modal before showing details
+                            setPendingRevealCredId(cred.id);
+                            setVerifyPassword("");
+                            setVerifyError("");
+                            setIsVerifyModalOpen(true);
                           }}
                           className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="View Secret"
@@ -768,6 +770,7 @@ export default function CredentialsPage() {
                     setShowPassInDetail(true);
                     setIsVerifyModalOpen(false);
                     setVerifyPassword("");
+                    setIsDetailOpen(true); // Open the detail modal after verification
                   } catch (err: any) {
                     setVerifyError(err?.response?.data?.message || "Invalid password. Please try again.");
                   } finally {
