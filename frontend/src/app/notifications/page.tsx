@@ -31,6 +31,24 @@ interface Notification {
   link?: string;
 }
 
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  
+  const mins = Math.floor(diff / 60000);
+  if (60 > mins) {
+    return `${mins} mins ago`;
+  }
+  
+  const hours = Math.floor(mins / 60);
+  if (24 > hours) {
+    return `${hours} hours ago`;
+  }
+  
+  return date.toLocaleDateString();
+};
+
 export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -64,24 +82,6 @@ export default function NotificationsPage() {
   const notifications = response?.data || [];
   const totalPages = response?.totalPages || 1;
   const totalCount = response?.totalCount || 0;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    const mins = Math.floor(diff / 60000);
-    if (60 > mins) {
-      return `${mins} mins ago`;
-    }
-    
-    const hours = Math.floor(mins / 60);
-    if (24 > hours) {
-      return `${hours} hours ago`;
-    }
-    
-    return date.toLocaleDateString();
-  };
 
   return (
     <div className="flex min-h-screen bg-white text-slate-600">
