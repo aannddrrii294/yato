@@ -341,11 +341,9 @@ export default function CredentialsPage() {
                           onClick={async () => {
                             const res = await api.get(`/credentials/${cred.id}`);
                             setSelectedCred(res.data);
-                            // Trigger verification modal before showing details
-                            setPendingRevealCredId(cred.id);
-                            setVerifyPassword("");
-                            setVerifyError("");
-                            setIsVerifyModalOpen(true);
+                            setShowPassInDetail(false);
+                            setSecretVerified(false);
+                            setIsDetailOpen(true);
                           }}
                           className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="View Secret"
