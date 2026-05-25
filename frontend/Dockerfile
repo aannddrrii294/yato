@@ -14,7 +14,7 @@ FROM node:20-alpine
 
 # Install timezone data
 RUN apk add --no-cache tzdata
-ENV TZ="Asia/Jakarta"
+ENV TZ="UTC"
 
 WORKDIR /app
 

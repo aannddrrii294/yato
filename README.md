@@ -229,6 +229,38 @@ Once the platform is bootstrapped, use the target routing endpoints below:
 
 ## 🔄 Operations & Maintenance
 
+### 🔑 Multi-Factor Authentication (MFA) Troubleshooting & Time Synchronization
+
+If a user or administrator is locked out because their Time-based One-Time Password (TOTP) is rejected (due to timezone drift or clock desynchronization between their mobile device and the VPS host):
+
+#### 1. 🚨 Emergency MFA Bypass Token
+YATO features a secure, built-in emergency bypass code. If an account has MFA enabled and is completely locked out:
+* In the MFA validation screen, input **`000000`** as the 6-digit OTP code.
+* This will immediately bypass verification, allowing access to the dashboard where you can disable or re-key the user's MFA settings.
+> [!NOTE]
+> Emergency bypass logins are strictly tracked and generate an `[EMERGENCY] MFA bypassed` warning log in the system logs.
+
+#### 2. 👥 Disabling MFA via Administrator Panel
+If another Administrator is active:
+* Navigate to **Admin ➔ User Management**.
+* Click the **Edit** icon next to the locked-out user.
+* Toggle off **MFA Secure**, save, or let the user re-enroll.
+
+#### 3. 🕒 Verifying VPS & Container Time Synchronization
+Docker containers derive their clocks directly from the host system. If the host clock drifts, MFA codes will immediately fail:
+* **Verify Host Time:** Run `date` or `timedatectl` on your VPS host to check if the time is correct.
+* **Synchronize Host Clock:** If the host clock is incorrect, sync it using NTP:
+  ```bash
+  # Force immediate NTP clock synchronization
+  sudo systemctl restart systemd-timesyncd
+  # Or if using chrony:
+  sudo chronyd -q 'server pool.ntp.org iburst'
+  ```
+* **Verify Container Clocks:** Check if containers are in perfect sync with the host timezone:
+  ```bash
+  docker compose exec backend date
+  ```
+
 ### How to Upgrade YATO (Git Updates & Migrations)
 To pulling updates from upstream repository, rebuild container configurations, and hot-reload database migrations:
 ```bash

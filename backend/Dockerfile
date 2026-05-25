@@ -20,11 +20,9 @@ RUN npm run build
 FROM node:20-slim
 
 # Install OpenSSL and timezone data
-RUN apt-get update && apt-get install -y openssl tzdata && \
-    ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata
+RUN apt-get update && apt-get install -y openssl tzdata
 
-ENV TZ="Asia/Jakarta"
+ENV TZ="UTC"
 
 WORKDIR /app
 

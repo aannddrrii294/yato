@@ -49,6 +49,20 @@ else
   echo "   • Node.js not available on host, skipping automated copyright injection."
 fi
 
+# Step 1.7: Detect Host Timezone and sync .env
+echo -e "${YELLOW}⚙️  Synchronizing system timezone...${NC}"
+HOST_TZ=$(cat /etc/timezone 2>/dev/null || timedatectl | grep "Time zone" | awk '{print $3}' 2>/dev/null || echo "UTC")
+echo -e "   • System Timezone detected as: ${GREEN}$HOST_TZ${NC}"
+
+if [ -f ".env" ]; then
+  if grep -q "^TZ=" .env; then
+      sed -i "s|^TZ=.*|TZ=\"$HOST_TZ\"|" .env
+  else
+      echo "TZ=\"$HOST_TZ\"" >> .env
+  fi
+fi
+
+
 
 # Get Server IP
 SERVER_IP=$(hostname -I | awk '{print $1}')

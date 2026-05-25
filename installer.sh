@@ -76,6 +76,17 @@ if [ ! -f ".env" ]; then
     sed -i "s|ENCRYPTION_KEY=.*|ENCRYPTION_KEY=\"$ENC_KEY\"|" .env
 fi
 
+# Detect Host Timezone and sync .env
+HOST_TZ=$(cat /etc/timezone 2>/dev/null || timedatectl | grep "Time zone" | awk '{print $3}' 2>/dev/null || echo "UTC")
+echo -e "   • System Timezone detected as: ${GREEN}$HOST_TZ${NC}"
+
+if grep -q "^TZ=" .env; then
+    sed -i "s|^TZ=.*|TZ=\"$HOST_TZ\"|" .env
+else
+    echo "TZ=\"$HOST_TZ\"" >> .env
+fi
+
+
 # IP Detection
 SERVER_IP=$(hostname -I | awk '{print $1}')
 [ -z "$SERVER_IP" ] && SERVER_IP=$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d/ -f1 | head -n1)
