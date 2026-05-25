@@ -338,12 +338,11 @@ export default function CredentialsPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button 
-                          onClick={async () => {
-                            const res = await api.get(`/credentials/${cred.id}`);
-                            setSelectedCred(res.data);
-                            setShowPassInDetail(false);
-                            setSecretVerified(false);
-                            setIsDetailOpen(true);
+                          onClick={() => {
+                            setPendingRevealCredId(cred.id);
+                            setVerifyPassword("");
+                            setVerifyError("");
+                            setIsVerifyModalOpen(true);
                           }}
                           className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                           title="View Secret"
@@ -604,7 +603,14 @@ export default function CredentialsPage() {
               className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md border border-white/20 flex flex-col max-h-[90vh]"
             >
               <div className="p-10 bg-slate-900 text-white relative shrink-0 rounded-t-[3rem]">
-                <button onClick={() => setIsDetailOpen(false)} className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+                <button 
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    setShowPassInDetail(false);
+                    setSecretVerified(false);
+                  }} 
+                  className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all"
+                >
                   <X className="w-6 h-6" />
                 </button>
                 <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-600/40">
@@ -726,7 +732,11 @@ export default function CredentialsPage() {
                 
                 <div className="pt-4">
                   <button 
-                    onClick={() => setIsDetailOpen(false)}
+                    onClick={() => {
+                      setIsDetailOpen(false);
+                      setShowPassInDetail(false);
+                      setSecretVerified(false);
+                    }}
                     className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 transition-all"
                   >
                     Close Secure View
