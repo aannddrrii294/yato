@@ -231,6 +231,7 @@ export default function AuditPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`badge ${
+                            log.action.includes('FAIL') || log.action.includes('LOCK') || log.action.includes('ERROR') ? 'bg-rose-50 text-rose-600 border-rose-100' :
                             log.action.includes('CREATE') ? 'bg-blue-50 text-blue-600 border-blue-100' :
                             log.action.includes('DELETE') ? 'bg-rose-50 text-rose-600 border-rose-100' :
                             log.action.includes('LOGIN') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
