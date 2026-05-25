@@ -64,6 +64,10 @@ export API_URL="http://$SERVER_IP:4000"
 echo -e "${YELLOW}📦 Rebuilding and restarting containers...${NC}"
 $DOCKER_COMPOSE up -d --build
 
+# Proactively restart Nginx to flush DNS resolver cache for internal container IPs
+echo -e "${YELLOW}⚡ Flushing Nginx DNS resolver cache...${NC}"
+$DOCKER_COMPOSE restart nginx || echo -e "${RED}Warning: Failed to restart Nginx, continuing...${NC}"
+
 # Step 3: Run migrations and sync schema
 echo -e "${YELLOW}🗄️  Synchronizing database schema...${NC}"
 $DOCKER_COMPOSE exec -T backend npx prisma migrate deploy || true
