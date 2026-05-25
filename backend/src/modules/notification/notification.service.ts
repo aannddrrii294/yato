@@ -29,7 +29,7 @@ export class NotificationService {
   async createNotification(userId: string, type: string, title: string, message: string) {
     let extractedLink = undefined;
     if (message) {
-      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|\/[^\s<]+)/i);
       if (linkMatch && linkMatch[1]) {
         extractedLink = linkMatch[1];
       }
@@ -192,7 +192,7 @@ export class NotificationService {
     // Automatically extract link from message if present
     let extractedLink = undefined;
     if (message) {
-      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|\/[^\s<]+)/i);
       if (linkMatch && linkMatch[1]) {
         extractedLink = linkMatch[1];
       }
@@ -247,7 +247,7 @@ export class NotificationService {
     // Automatically extract link from message if not explicitly provided
     let finalLink = link;
     if (!finalLink && message) {
-      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|\/[^\s<]+)/i);
       if (linkMatch && linkMatch[1]) {
         finalLink = linkMatch[1];
       }
