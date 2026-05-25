@@ -21,7 +21,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, formatDate, getRelativeLink } from "@/lib/utils";
 
-interface Notification {
+interface YatoNotification {
   id: string;
   type: string;
   title: string;
@@ -107,7 +107,7 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {notifications.map((note: Notification) => {
+              {notifications.map((note: YatoNotification) => {
                 const targetLink = getRelativeLink(note.link);
 
                 return (
