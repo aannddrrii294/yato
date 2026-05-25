@@ -240,5 +240,44 @@ export class SupportTicketService {
     const allTags = tickets.flatMap(t => t.tags || []);
     return Array.from(new Set(allTags)).sort();
   }
+
+  async deleteTicket(id: string, userId: string) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id },
+      include: { followers: { select: { id: true } } },
+    });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    // Delete all related comments first
+    await this.prisma.ticketComment.deleteMany({
+      where: { supportTicketId: id },
+    });
+
+    // Disconnect all followers
+    if (ticket.followers.length > 0) {
+      await this.prisma.supportTicket.update({
+        where: { id },
+        data: {
+          followers: {
+            disconnect: ticket.followers.map(f => ({ id: f.id })),
+          },
+        },
+      });
+    }
+
+    // Delete the ticket
+    await this.prisma.supportTicket.delete({ where: { id } });
+
+    // Log the deletion to audit trail
+    await this.auditService.log(
+      userId,
+      'DELETE_SUPPORT_TICKET',
+      'SupportTicket',
+      id,
+      { ticketId: ticket.ticketId, subject: ticket.subject, category: ticket.category, priority: ticket.priority },
+    );
+
+    return { success: true, message: `Ticket ${ticket.ticketId} has been permanently deleted.` };
+  }
 }
 

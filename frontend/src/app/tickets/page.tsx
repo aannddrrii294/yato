@@ -264,6 +264,23 @@ function TicketsContent() {
     },
   });
 
+  const deleteTicketMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/support-tickets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+    },
+  });
+
+  const handleDeleteTicket = async (e: React.MouseEvent, ticket: UnifiedTicket) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to permanently delete ticket ${ticket.ticketId}?\n\nThis action cannot be undone.`)) return;
+    try {
+      await deleteTicketMutation.mutateAsync(ticket.id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete ticket.');
+    }
+  };
+
   const handleAction = async (e: React.MouseEvent, ticket: UnifiedTicket, action: 'approve' | 'reject') => {
     e.stopPropagation();
     setSelectedTicketForAction(ticket);
@@ -762,6 +779,16 @@ function TicketsContent() {
                                <button className="p-2 text-slate-400 hover:text-slate-900 transition-all">
                                  <ExternalLink className="w-4 h-4" />
                                </button>
+                               {isAdmin && (
+                                 <button 
+                                   onClick={(e) => handleDeleteTicket(e, ticket)}
+                                   disabled={deleteTicketMutation.isPending}
+                                   className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                   title="Delete Ticket (Admin)"
+                                 >
+                                   <Trash2 className="w-4 h-4" />
+                                 </button>
+                               )}
                              </div>
                            </td>
                          </motion.tr>

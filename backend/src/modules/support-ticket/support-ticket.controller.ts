@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SupportTicketService } from './support-ticket.service';
 import { CreateSupportTicketDto } from './dto/support-ticket.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('support-tickets')
 @Controller('support-tickets')
@@ -71,5 +73,14 @@ export class SupportTicketController {
   @ApiOperation({ summary: 'Update a support ticket' })
   update(@Param('id') id: string, @Body() dto: any, @Req() req: any) {
     return this.supportTicketService.update(id, dto, req.user.id);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a support ticket (Admin only)' })
+  async deleteTicket(@Param('id') id: string, @Req() req: any) {
+    return this.supportTicketService.deleteTicket(id, req.user.id);
   }
 }
