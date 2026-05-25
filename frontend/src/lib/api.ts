@@ -25,9 +25,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         const isLoginRequest = error.config?.url?.includes("/auth/login");
+        const isRevealRequest = error.config?.url?.includes("/reveal");
+        const isVerifyRequest = error.config?.url?.includes("/verify-password");
         const isLoginPage = window.location.pathname === "/login";
         
-        if (!isLoginRequest && !isLoginPage) {
+        if (!isLoginRequest && !isRevealRequest && !isVerifyRequest && !isLoginPage) {
           localStorage.removeItem("yato_token");
           window.location.href = "/login";
         }

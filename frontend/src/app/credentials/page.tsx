@@ -67,6 +67,7 @@ export default function CredentialsPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [pendingRevealCredId, setPendingRevealCredId] = useState<string | null>(null);
   const [secretVerified, setSecretVerified] = useState(false);
+  const [failedVerifyAttempts, setFailedVerifyAttempts] = useState(0);
   
   const [tagInput, setTagInput] = useState("");
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -778,9 +779,21 @@ export default function CredentialsPage() {
                     setShowPassInDetail(true);
                     setIsVerifyModalOpen(false);
                     setVerifyPassword("");
+                    setFailedVerifyAttempts(0); // Reset attempts on success
                     setIsDetailOpen(true); // Open the detail modal after verification
                   } catch (err: any) {
-                    setVerifyError(err?.response?.data?.message || "Invalid password. Please try again.");
+                    const nextAttempts = failedVerifyAttempts + 1;
+                    setFailedVerifyAttempts(nextAttempts);
+                    
+                    if (nextAttempts >= 3) {
+                      setFailedVerifyAttempts(0);
+                      setIsVerifyModalOpen(false);
+                      localStorage.removeItem("yato_token");
+                      window.location.href = "/login";
+                    } else {
+                      const attemptsRemaining = 3 - nextAttempts;
+                      setVerifyError(`Invalid password. ${attemptsRemaining} attempt${attemptsRemaining > 1 ? 's' : ''} remaining before logout.`);
+                    }
                   } finally {
                     setIsVerifying(false);
                   }
