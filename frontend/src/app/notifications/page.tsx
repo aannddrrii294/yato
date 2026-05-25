@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, getRelativeLink } from "@/lib/utils";
 
 interface Notification {
   id: string;
@@ -108,16 +108,7 @@ export default function NotificationsPage() {
           ) : (
             <div className="space-y-4">
               {notifications.map((note: Notification) => {
-                // Parse target absolute links to relative paths
-                let targetLink = note.link;
-                if (targetLink && targetLink.startsWith("http")) {
-                  try {
-                    const urlObj = new URL(targetLink);
-                    targetLink = urlObj.pathname + urlObj.search;
-                  } catch (e) {
-                    // fallback
-                  }
-                }
+                const targetLink = getRelativeLink(note.link);
 
                 return (
                   <motion.div 

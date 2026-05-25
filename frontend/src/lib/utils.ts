@@ -22,3 +22,16 @@ export function formatDate(dateString: string): string {
   
   return date.toLocaleDateString();
 }
+
+export function getRelativeLink(link?: string): string | undefined {
+  if (!link) return undefined;
+  if (link.startsWith("http")) {
+    try {
+      const urlObj = new URL(link);
+      return urlObj.pathname + urlObj.search;
+    } catch (e) {
+      return link;
+    }
+  }
+  return link;
+}
