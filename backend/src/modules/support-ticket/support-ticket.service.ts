@@ -265,6 +265,15 @@ export class SupportTicketService {
       });
     }
 
+    // Delete all related notifications
+    await this.prisma.notification.deleteMany({
+      where: {
+        link: {
+          contains: id,
+        },
+      },
+    });
+
     // Delete the ticket
     await this.prisma.supportTicket.delete({ where: { id } });
 

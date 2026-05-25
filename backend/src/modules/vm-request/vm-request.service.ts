@@ -329,6 +329,15 @@ export class VmRequestService {
       });
     }
 
+    // Delete all related notifications
+    await this.prisma.notification.deleteMany({
+      where: {
+        link: {
+          contains: id,
+        },
+      },
+    });
+
     // 3. Delete the VM Request (comments cascade-delete automatically via prisma schema)
     await this.prisma.vMRequest.delete({
       where: { id },

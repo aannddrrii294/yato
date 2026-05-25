@@ -296,6 +296,15 @@ export class ServiceRequestService {
       });
     }
 
+    // Delete all related notifications
+    await this.prisma.notification.deleteMany({
+      where: {
+        link: {
+          contains: id,
+        },
+      },
+    });
+
     // 3. Delete the Service Request (comments cascade-delete automatically via prisma)
     await this.prisma.serviceRequest.delete({
       where: { id },
