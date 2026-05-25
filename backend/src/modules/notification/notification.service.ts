@@ -27,7 +27,14 @@ export class NotificationService {
 
   // Compatibility method for worker
   async createNotification(userId: string, type: string, title: string, message: string) {
-    return this.create(userId, title, message, type);
+    let extractedLink = undefined;
+    if (message) {
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      if (linkMatch && linkMatch[1]) {
+        extractedLink = linkMatch[1];
+      }
+    }
+    return this.create(userId, title, message, type, extractedLink);
   }
 
   async checkUserPreference(userId: string, type: string): Promise<boolean> {
@@ -182,8 +189,17 @@ export class NotificationService {
       await this.sendEmail(user.email, title, plainMessage);
     }
 
+    // Automatically extract link from message if present
+    let extractedLink = undefined;
+    if (message) {
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      if (linkMatch && linkMatch[1]) {
+        extractedLink = linkMatch[1];
+      }
+    }
+
     // 4. Always create internal notification
-    await this.create(userId, title, message, 'INFO');
+    await this.create(userId, title, message, extractedLink ? 'TICKET_UPDATE' : 'INFO', extractedLink);
   }
 
   async sendToUserQueue(userId: string, title: string, message: string, link?: string) {
@@ -228,8 +244,17 @@ export class NotificationService {
       });
     }
 
+    // Automatically extract link from message if not explicitly provided
+    let finalLink = link;
+    if (!finalLink && message) {
+      const linkMatch = message.match(/Link:\s*(https?:\/\/[^\s<]+|/[^\s<]+)/i);
+      if (linkMatch && linkMatch[1]) {
+        finalLink = linkMatch[1];
+      }
+    }
+
     // 4. Always create internal notification immediately
-    await this.create(userId, title, message, link ? 'TICKET_UPDATE' : 'INFO', link);
+    await this.create(userId, title, message, finalLink ? 'TICKET_UPDATE' : 'INFO', finalLink);
   }
 
   async getRecipientsForTicket(params: {

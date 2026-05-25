@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { Pagination } from "@/components/Pagination";
+import { useRouter } from "next/navigation";
 import { 
   Bell, 
   CheckCircle2, 
@@ -31,6 +32,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -104,7 +106,7 @@ export default function NotificationsPage() {
             </button>
           </div>
         </header>
-
+ 
         <div className="max-w-4xl space-y-4 mb-8">
           {isLoading ? (
             [...Array(5)].map((_, i) => (
@@ -119,19 +121,34 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {notifications.map((note: Notification) => (
-                <motion.div 
-                  key={note.id} 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => !note.isRead && markAsReadMutation.mutate(note.id)}
-                  className={cn(
-                    "group flex gap-5 p-6 rounded-2xl transition-all border relative cursor-pointer",
-                    !note.isRead 
-                      ? "bg-white border-blue-100 shadow-lg shadow-blue-600/5" 
-                      : "bg-slate-50/50 border-slate-100 opacity-75 grayscale-[0.5]"
-                  )}
-                >
+              {notifications.map((note: Notification) => {
+                // Parse target absolute links to relative paths
+                let targetLink = note.link;
+                if (targetLink && targetLink.startsWith("http")) {
+                  try {
+                    const urlObj = new URL(targetLink);
+                    targetLink = urlObj.pathname + urlObj.search;
+                  } catch (e) {
+                    // fallback
+                  }
+                }
+
+                return (
+                  <motion.div 
+                    key={note.id} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => {
+                      if (!note.isRead) markAsReadMutation.mutate(note.id);
+                      if (targetLink) router.push(targetLink);
+                    }}
+                    className={cn(
+                      "group flex gap-5 p-6 rounded-2xl transition-all border relative cursor-pointer",
+                      !note.isRead 
+                        ? "bg-white border-blue-100 shadow-lg shadow-blue-600/5" 
+                        : "bg-slate-50/50 border-slate-100 opacity-75 grayscale-[0.5]"
+                    )}
+                  >
                   {!note.isRead && (
                     <div className="absolute top-6 left-0 w-1 h-12 bg-blue-600 rounded-r-full" />
                   )}
@@ -163,7 +180,7 @@ export default function NotificationsPage() {
                     {note.link && (
                       <div className="mt-3">
                         <a 
-                          href={note.link} 
+                          href={targetLink || note.link} 
                           className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest"
                           onClick={(e) => e.stopPropagation()}
                         >
