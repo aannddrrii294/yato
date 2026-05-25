@@ -13,43 +13,46 @@
 
 ---
 
-## 🚀 Overview
+## 🚀 Overview & Name Origin
 
-**YATO** is an enterprise-grade, highly secure, and unified IT Operations and Asset Management platform designed to streamline infrastructure provisioning, support ticket orchestration, credential vaults, and multi-layered physical/digital asset registries. Built from the ground up for modern system administrators, DevOps, and infrastructure teams.
+### ⛩️ Why YATO?
+The platform's name **YATO** is inspired by **Yato (夜ト)**, the stray god from the popular anime series ***Noragami***. In the anime, Yato is a minor, self-proclaimed deity who does odd jobs, resolves human troubles, and works tirelessly for a mere **5-yen coin** to build his grand shrine and earn devotees. 
 
-By combining real-time VM provisioning, multi-tenant capable credential protection, nested support discussion threads, and a rich, interactive network/physical rack asset registry, YATO eliminates the operational gaps between dev teams and infrastructure operations.
+True to its namesake, the **YATO Platform** acts as the ultimate, dedicated "helper god" for IT Support, Project Management, and Infrastructure Operations. It works quietly and tirelessly behind the scenes—managing support tickets, tracking assets, resolving tasks, and securing your enterprise credentials with absolute reliability.
+
+**YATO** is a unified, highly secure IT Operations, Task Management, and Asset Registry platform built from the ground up to streamline communications and bridge the gap between development teams, helpdesk support, and system administrators.
 
 ---
 
 ## ✨ Core Feature Set
 
-### 💻 1. Virtual Machine & Service Provisioning Engine
-* **Structured Approval Lifecycles:** Dynamic state machines governing VM and custom service requests (`PENDING` ➔ `APPROVED` ➔ `PROVISIONING` ➔ `COMPLETED` / `FAILED`).
-* **Automated SSH Orchestration:** Binds to secure SSH credentials to execute remote provisioning scripts, producing real-time logs and output.
-* **Queued Execution (BullMQ):** Highly scalable background task processors backed by Redis to manage hypervisor operations (Proxmox, VMware, or cloud APIs) without blocking the main gateway thread.
-* **Service Inventory & Endpoint Tracker:** Dynamically registers running endpoints, custom service configurations (JSON), ports, and active addresses.
+*(Note: Virtual Machine & Service Provisioning engine is temporarily disabled and undergoing refinement for future updates)*
 
-### 🔐 2. Hardened Encrypted Credential Vault
-* **AES-256 Envelope Cryptography:** Sensitive passwords, API tokens, and SSH keys are encrypted using dynamic Data Encryption Keys (DEKs) wrapped by a Master Key Encrypting Key (KEK).
-* **On-the-Fly Key Rotation:** Single-click key rotation API that generates new active DEKs, updates the historical keyring, and securely re-encrypts all database records with zero downtime.
-* **Granular Audit Logging:** Every vault lookup creates an immutable `ACCESS_CREDENTIAL` event containing user context, timestamp, IP address, and browser User-Agent.
+### 🎫 1. Helpdesk Tickets & Nested Comment Threads
+* **Interactive Ticketing Portal:** Easily classify support tickets by categories (`GENERAL`, `INFRASTRUCTURE`, `BILLING`, etc.) and set SLA priorities.
+* **Threaded Comment Collaboration:** Interactive conversation feeds within tickets supporting deep nesting, file uploads, and `@mentions`.
+* **Multi-Gateway Notifications:** Automated real-time alerts via Email, WhatsApp, and Telegram keeping support agents and users instantly updated.
 
-### 📊 3. Enterprise Asset Registry & Rack Tracing
-* **Physical & Digital Inventory:** Tracks everything from Servers, VMs, Switches, and Routers to physical user hardware (e.g., Laptops) with custom dynamic metadata fields.
-* **Datacenter Rack Mapping:** Pinpoints exact server locations inside rack cabinets (Rack Name, Datacenter Zone, and vertical unit position `uPosition`).
-* **Asset Relationship Graph:** Defines parent-child and network link dependencies (e.g., `VM_TO_HYPERVISOR`, `SERVER_TO_RACK`, `SWITCH_TO_DATACENTER`).
-* **QR-Code Rapid Scan:** Generates inline high-fidelity QR codes to simplify physical device audits.
-* **Lifecycle Movement Audits:** Automatically tracks ownership transfers, physical moves, repairs, or disposals.
+### 📋 2. Comprehensive Task & Project Management
+* **Agile Task Tracking:** Track daily maintenance schedules, troubleshoot operations, and backup workflows across different priorities.
+* **Granular Checklists:** Break down tasks into interactive subtask checklists with live state synchronization.
+* **Interactive Comment Streams:** Hold dedicated discussions directly inside specific task cards, complete with multi-file attachment uploads.
 
-### 🎫 4. Helpdesk Tickets & Nested Comment Threads
-* **Interactive Helpdesk:** Structured ticketing categorizes queries (`GENERAL`, `INFRASTRUCTURE`, `BILLING`, etc.) and scales priority configurations.
-* **Threaded Comment Matrix:** Enables deep, hierarchical communication on tickets with file attachments and nested reply support.
-* **Real-time Notifications:** Dispatches transactional updates across a modular gateway supporting Email, WhatsApp, and Telegram.
+### 🔐 3. Hardened Encrypted Credential Vault
+* **AES-256 Envelope Cryptography:** Sensitive passwords, database connections, and SSH keys are encrypted via dynamic Data Encryption Keys (DEKs) wrapped by a Master Key Encrypting Key (KEK).
+* **On-the-Fly Key Rotation:** Dynamic key rotation utility that generates new DEKs and transparently re-encrypts all database credentials with zero downtime.
+* **Granular Audit Logging:** Every credential query generates an immutable access log tracking user, timestamp, IP address, and browser metadata.
+
+### 📊 4. Enterprise Asset Registry & Rack Tracing
+* **Physical & Digital Inventories:** Catalog datacenters, servers, switches, routers, and company laptops with dynamic, custom metadata schemas.
+* **Datacenter Rack cabinet Mapping:** Model servers precisely inside physical rack layouts with vertical unit positions (`uPosition`) and rack zones.
+* **Asset Dependencies Graph:** Establish logical relations (e.g., `SERVER_TO_RACK`, `SWITCH_TO_DATACENTER`) to trace infrastructure topologies.
+* **Rapid Scan QR Codes:** Inline high-fidelity QR code generation for rapid physical audits and updates.
 
 ### 🛡️ 5. Identity, Access, & Security Operations
-* **Two-Factor Authentication (MFA/2FA):** Integrated dynamic Time-based One-Time Passwords (TOTP) using standard authenticator apps (Google Authenticator, Authy, etc.).
-* **Role-Based Access Control (RBAC):** Hierarchical permissions (`ADMIN`, `TICKETING_ADMIN`, etc.) applied systematically via NestJS Guards.
-* **Brute-Force & Lockout Guard:** Tracks failed login attempts and locks out targeted profiles dynamically using expiration windows.
+* **Two-Factor Authentication (MFA/2FA):** Seamless dynamic Time-based One-Time Passwords (TOTP) utilizing authenticator apps (Google Authenticator, Authy, etc.).
+* **Role-Based Access Control (RBAC):** Strict NestJS controller guards implementing multi-tier permissions (`ADMIN`, `SUPPORT_AGENT`, etc.).
+* **Brute-Force & Lockout Guard:** Automated monitoring of failed login attempts that locks out compromised accounts after consecutive validation errors.
 
 ---
 
