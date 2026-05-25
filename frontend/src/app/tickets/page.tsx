@@ -265,9 +265,23 @@ function TicketsContent() {
   });
 
   const deleteTicketMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/support-tickets/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+    mutationFn: ({ id, type }: { id: string; type: 'VM' | 'SERVICE' | 'SUPPORT' }) => {
+      if (type === 'VM') {
+        return api.delete(`/vm/request/${id}`);
+      } else if (type === 'SERVICE') {
+        return api.delete(`/service/request/${id}`);
+      } else {
+        return api.delete(`/support-tickets/${id}`);
+      }
+    },
+    onSuccess: (_, variables) => {
+      if (variables.type === 'VM') {
+        queryClient.invalidateQueries({ queryKey: ["vm-requests"] });
+      } else if (variables.type === 'SERVICE') {
+        queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      }
     },
   });
 
@@ -275,7 +289,7 @@ function TicketsContent() {
     e.stopPropagation();
     if (!confirm(`Are you sure you want to permanently delete ticket ${ticket.ticketId}?\n\nThis action cannot be undone.`)) return;
     try {
-      await deleteTicketMutation.mutateAsync(ticket.id);
+      await deleteTicketMutation.mutateAsync({ id: ticket.id, type: ticket.type });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete ticket.');
     }

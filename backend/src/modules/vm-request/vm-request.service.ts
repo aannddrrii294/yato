@@ -304,4 +304,45 @@ export class VmRequestService {
     if (!request) throw new NotFoundException('Request not found');
     return request;
   }
+
+  async deleteRequest(id: string, userId: string) {
+    const request = await this.prisma.vMRequest.findUnique({
+      where: { id },
+      include: { followers: { select: { id: true } } },
+    });
+    if (!request) throw new NotFoundException('VM Request not found');
+
+    // 1. Delete associated VMInventory if it exists
+    await this.prisma.vMInventory.deleteMany({
+      where: { requestId: id },
+    });
+
+    // 2. Disconnect followers
+    if (request.followers.length > 0) {
+      await this.prisma.vMRequest.update({
+        where: { id },
+        data: {
+          followers: {
+            disconnect: request.followers.map(f => ({ id: f.id })),
+          },
+        },
+      });
+    }
+
+    // 3. Delete the VM Request (comments cascade-delete automatically via prisma schema)
+    await this.prisma.vMRequest.delete({
+      where: { id },
+    });
+
+    // 4. Log deletion to audit activity
+    await this.auditService.log(
+      userId,
+      'DELETE_VM_REQUEST',
+      'VMRequest',
+      id,
+      { ticketId: request.ticketId, hostname: request.hostname, environment: request.environment },
+    );
+
+    return { success: true, message: `VM Request ${request.ticketId} has been permanently deleted.` };
+  }
 }

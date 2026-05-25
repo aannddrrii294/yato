@@ -72,4 +72,11 @@ export class VmRequestController {
   update(@Param('id') id: string, @Body() dto: Partial<CreateVmRequestDto>, @Req() req: any) {
     return this.vmRequestService.update(id, dto, req.user.id);
   }
+
+  @Delete(':id')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Delete a VM request (Admin only)' })
+  deleteRequest(@Param('id') id: string, @Req() req: any) {
+    return this.vmRequestService.deleteRequest(id, req.user.id);
+  }
 }

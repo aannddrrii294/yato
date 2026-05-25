@@ -73,4 +73,11 @@ export class ServiceRequestController {
   update(@Param('id') id: string, @Body() dto: Partial<CreateServiceRequestDto>, @Req() req: any) {
     return this.serviceRequestService.update(id, dto, req.user.id);
   }
+
+  @Delete(':id')
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Delete a service request (Admin only)' })
+  deleteRequest(@Param('id') id: string, @Req() req: any) {
+    return this.serviceRequestService.deleteRequest(id, req.user.id);
+  }
 }

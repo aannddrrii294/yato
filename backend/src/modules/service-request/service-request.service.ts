@@ -271,4 +271,45 @@ export class ServiceRequestService {
     await this.auditService.log(userId, 'UPDATE_SERVICE_REQUEST', 'ServiceRequest', id, dto);
     return updated;
   }
+
+  async deleteRequest(id: string, userId: string) {
+    const request = await this.prisma.serviceRequest.findUnique({
+      where: { id },
+      include: { followers: { select: { id: true } } },
+    });
+    if (!request) throw new NotFoundException('Service Request not found');
+
+    // 1. Delete associated ServiceInventory if it exists
+    await this.prisma.serviceInventory.deleteMany({
+      where: { requestId: id },
+    });
+
+    // 2. Disconnect followers
+    if (request.followers.length > 0) {
+      await this.prisma.serviceRequest.update({
+        where: { id },
+        data: {
+          followers: {
+            disconnect: request.followers.map(f => ({ id: f.id })),
+          },
+        },
+      });
+    }
+
+    // 3. Delete the Service Request (comments cascade-delete automatically via prisma)
+    await this.prisma.serviceRequest.delete({
+      where: { id },
+    });
+
+    // 4. Log deletion to audit activity
+    await this.auditService.log(
+      userId,
+      'DELETE_SERVICE_REQUEST',
+      'ServiceRequest',
+      id,
+      { ticketId: request.ticketId, serviceName: request.serviceName, environment: request.environment },
+    );
+
+    return { success: true, message: `Service Request ${request.ticketId} has been permanently deleted.` };
+  }
 }
