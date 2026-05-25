@@ -288,9 +288,32 @@ Open browser at [http://localhost:3000](http://localhost:3000).
 Once the platform is bootstrapped, use the target routing endpoints below:
 
 ### 🌐 Network Routing
-* **Frontend Web Portal:** [http://localhost:4001](http://localhost:4001) (Direct Node Port) or [http://localhost:9090](http://localhost:9090) (Nginx Gateway Router)
-* **Backend API Gateway:** [http://localhost:4000](http://localhost:4000)
-* **Interactive OpenAPI/Swagger Documentation:** [http://localhost:4000/docs](http://localhost:4000/docs)
+* **Frontend Web Portal:** `http://<your-server-ip>:4001` (Direct Node Port) or `http://<your-server-ip>:9090` (Nginx Gateway Router)
+* **Backend API Gateway:** `http://<your-server-ip>:4000`
+* **Interactive OpenAPI/Swagger Documentation:** `http://<your-server-ip>:4000/docs`
+
+> [!TIP]
+> **🚀 Production Deployment & Custom Domain (Cloudflare Tunnel)**
+> If you are deploying YATO on a public VPS and want to access it securely using a custom domain (e.g., `yato.example.com`) with automated SSL and zero incoming firewall ports open, it is highly recommended to use a **Cloudflare Tunnel (`cloudflared`)**:
+> 1. Install `cloudflared` on your host server.
+> 2. Create a secure tunnel:
+>    ```bash
+>    cloudflared tunnel create yato-tunnel
+>    ```
+> 3. Route your custom domain traffic directly to the Nginx reverse proxy gateway (Port 9090):
+>    ```yaml
+>    # cloudflared config.yml sample ingress rule
+>    tunnel: yato-tunnel
+>    credentials-file: /root/.cloudflared/yato-tunnel.json
+>    ingress:
+>      - hostname: yato.example.com
+>        service: http://localhost:9090
+>      - service: http_status:404
+>    ```
+> 4. Launch the tunnel daemon:
+>    ```bash
+>    cloudflared tunnel run yato-tunnel
+>    ```
 
 ### 🔐 Default Administrator Login
 > [!WARNING]
