@@ -93,6 +93,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
   });
 
   const unreadCount = (notifications?.data || []).filter((n: any) => !n.isRead).length || 0;
+  const ticketUnreadCount = (notifications?.data || []).filter((n: any) => !n.isRead && n.link?.includes("/tickets")).length || 0;
   const displayNotifications = notifications?.data || [];
 
   useEffect(() => {
@@ -197,6 +198,11 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
               >
                 <item.icon className={cn("w-4 h-4", pathname === item.href ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600")} />
                 <span className="font-semibold text-[13px] tracking-tight">{item.label}</span>
+                {item.href === "/tickets" && ticketUnreadCount > 0 && (
+                  <span className="ml-auto flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm shadow-rose-500/25 animate-pulse shrink-0">
+                    {ticketUnreadCount}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
