@@ -26,8 +26,6 @@ True to its namesake, the **YATO Platform** acts as the ultimate, dedicated "hel
 
 ## ✨ Core Feature Set
 
-*(Note: Virtual Machine & Service Provisioning engine is temporarily disabled and undergoing refinement for future updates)*
-
 ### 🎫 1. Helpdesk Tickets & Nested Comment Threads
 * **Interactive Ticketing Portal:** Easily classify support tickets by categories (`GENERAL`, `INFRASTRUCTURE`, `BILLING`, etc.) and set SLA priorities.
 * **Threaded Comment Collaboration:** Interactive conversation feeds within tickets supporting deep nesting, file uploads, and `@mentions`.
