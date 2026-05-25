@@ -11,12 +11,12 @@ export function formatDate(dateString: string): string {
   const diff = now.getTime() - date.getTime();
   
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) {
+  if (60 > mins) {
     return `${mins} mins ago`;
   }
   
   const hours = Math.floor(mins / 60);
-  if (hours < 24) {
+  if (24 > hours) {
     return `${hours} hours ago`;
   }
   

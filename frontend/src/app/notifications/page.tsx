@@ -167,7 +167,8 @@ export default function NotificationsPage() {
                     )}
                   </div>
                 </motion.div>
-              })}
+              );
+            })}
             </div>
           )}
         </div>
