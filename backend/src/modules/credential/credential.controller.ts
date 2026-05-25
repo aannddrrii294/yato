@@ -3,13 +3,17 @@ import { CredentialService } from './credential.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateCredentialDto } from './dto/credential.dto';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('credentials')
 @ApiBearerAuth()
 @Controller('credentials')
 @UseGuards(JwtAuthGuard)
 export class CredentialController {
-  constructor(private credentialService: CredentialService) {}
+  constructor(
+    private credentialService: CredentialService,
+    private authService: AuthService,
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateCredentialDto, @Request() req: any) {
@@ -35,9 +39,22 @@ export class CredentialController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get specific credential detail' })
+  @ApiOperation({ summary: 'Get specific credential detail (password masked)' })
   async findOne(@Param('id') id: string, @Request() req: any) {
     return this.credentialService.findOne(id, req.user.id);
+  }
+
+  @Post(':id/reveal')
+  @ApiOperation({ summary: 'Reveal credential secret after password re-authentication' })
+  async revealSecret(
+    @Param('id') id: string,
+    @Body('password') password: string,
+    @Request() req: any,
+  ) {
+    // Step 1: Verify the user's current password
+    await this.authService.verifyPassword(req.user.id, password);
+    // Step 2: Return the decrypted credential
+    return this.credentialService.revealSecret(id, req.user.id);
   }
 
   @Put(':id')

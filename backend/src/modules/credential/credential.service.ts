@@ -67,13 +67,34 @@ export class CredentialService {
 
       return {
         ...credential,
-        password: this.encryptionService.decrypt(credential.password),
+        password: '••••••••••••••••••••••••',
       };
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
       console.error(`Error in findOne for credential ${id}:`, error.message);
       throw error;
     }
+  }
+
+  async revealSecret(id: string, userId: string) {
+    const credential = await this.prisma.credential.findUnique({ where: { id } });
+    if (!credential) throw new NotFoundException('Credential not found');
+
+    // Ownership check
+    if (credential.userId !== userId) {
+      throw new NotFoundException('Credential not found');
+    }
+
+    try {
+      await this.auditService.log(userId, 'REVEAL_CREDENTIAL_SECRET', 'Credential', id);
+    } catch (auditError) {
+      console.error('Failed to log audit:', auditError.message);
+    }
+
+    return {
+      ...credential,
+      password: this.encryptionService.decrypt(credential.password),
+    };
   }
 
   async update(id: string, data: any, userId: string) {

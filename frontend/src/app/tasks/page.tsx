@@ -1176,10 +1176,10 @@ export default function TasksPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 shadow-2xl flex flex-col max-h-[90vh]"
               >
                 {/* Notion Style Golden Yellow Banner Ribbon */}
-                <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center justify-between text-amber-800 gap-3">
+                <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center justify-between text-amber-800 gap-3 rounded-t-2xl relative overflow-visible">
                   <div className="flex items-center gap-2 text-xs font-bold">
                     <span className="animate-pulse w-2 h-2 bg-amber-500 rounded-full" />
                     <span>You're editing a template in</span>
@@ -1216,7 +1216,7 @@ export default function TasksPage() {
                         </span>
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
-                      <div className="absolute right-0 top-full mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-xl p-1 z-[110] opacity-0 pointer-events-none group-focus-within/repeat:opacity-100 group-focus-within/repeat:pointer-events-auto transition-all">
+                      <div className="absolute left-0 top-full mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-xl p-1 z-[110] opacity-0 pointer-events-none group-focus-within/repeat:opacity-100 group-focus-within/repeat:pointer-events-auto transition-all">
                         {[
                           { id: "NONE", label: "Don't repeat" },
                           { id: "DAILY", label: "Daily" },

@@ -306,6 +306,18 @@ export class AuthService {
     return { success: true };
   }
 
+  async verifyPassword(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    return { verified: true };
+  }
+
   async logout(userId: string) {
     await this.auditService.log(userId, 'LOGOUT', 'User', userId);
     return { success: true };

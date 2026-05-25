@@ -26,7 +26,9 @@ import {
   Tag,
   Hash,
   ChevronDown,
-  Edit3
+  Edit3,
+  AlertTriangle,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -56,6 +58,14 @@ export default function CredentialsPage() {
   const [showPassInForm, setShowPassInForm] = useState(false);
   const [showPassInDetail, setShowPassInDetail] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // Password verification state for revealing secrets
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyPassword, setVerifyPassword] = useState("");
+  const [verifyError, setVerifyError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [pendingRevealCredId, setPendingRevealCredId] = useState<string | null>(null);
+  const [secretVerified, setSecretVerified] = useState(false);
   
   const [tagInput, setTagInput] = useState("");
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -331,6 +341,8 @@ export default function CredentialsPage() {
                           onClick={async () => {
                             const res = await api.get(`/credentials/${cred.id}`);
                             setSelectedCred(res.data);
+                            setShowPassInDetail(false);
+                            setSecretVerified(false);
                             setIsDetailOpen(true);
                           }}
                           className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
@@ -667,18 +679,43 @@ export default function CredentialsPage() {
                     <div className="flex-1">
                       <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Secure Secret</p>
                       <p className="text-sm font-mono font-bold text-slate-900 break-all pr-4">
-                        {showPassInDetail ? selectedCred.password : "••••••••••••••••••••••••"}
+                        {showPassInDetail && secretVerified ? selectedCred.password : "••••••••••••••••••••••••"}
                       </p>
+                      {!secretVerified && (
+                        <p className="text-[9px] text-amber-600 font-semibold mt-1.5 flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Re-authentication required to reveal
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
-                        onClick={() => setShowPassInDetail(!showPassInDetail)}
+                        onClick={() => {
+                          if (showPassInDetail && secretVerified) {
+                            // Already revealed, just toggle hide
+                            setShowPassInDetail(false);
+                          } else {
+                            // Need password verification
+                            setPendingRevealCredId(selectedCred.id);
+                            setVerifyPassword("");
+                            setVerifyError("");
+                            setIsVerifyModalOpen(true);
+                          }
+                        }}
                         className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm"
                       >
-                        {showPassInDetail ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassInDetail && secretVerified ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                       <button 
-                        onClick={() => handleCopy(selectedCred.password || "", 'password')}
+                        onClick={() => {
+                          if (!secretVerified) {
+                            setPendingRevealCredId(selectedCred.id);
+                            setVerifyPassword("");
+                            setVerifyError("");
+                            setIsVerifyModalOpen(true);
+                            return;
+                          }
+                          handleCopy(selectedCred.password || "", 'password');
+                        }}
                         className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
                       >
                         {copiedField === 'password' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
@@ -695,6 +732,94 @@ export default function CredentialsPage() {
                     Close Secure View
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Password Verification Modal */}
+      <AnimatePresence>
+        {isVerifyModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm border border-slate-100"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-5">
+                  <ShieldCheck className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Identity Verification</h3>
+                <p className="text-[11px] font-medium text-slate-400 mb-6">Enter your account password to reveal this secret</p>
+                
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!verifyPassword.trim() || !pendingRevealCredId) return;
+                  setIsVerifying(true);
+                  setVerifyError("");
+                  try {
+                    // Verify password then reveal secret
+                    const res = await api.post(`/credentials/${pendingRevealCredId}/reveal`, { password: verifyPassword });
+                    setSelectedCred(res.data);
+                    setSecretVerified(true);
+                    setShowPassInDetail(true);
+                    setIsVerifyModalOpen(false);
+                    setVerifyPassword("");
+                  } catch (err: any) {
+                    setVerifyError(err?.response?.data?.message || "Invalid password. Please try again.");
+                  } finally {
+                    setIsVerifying(false);
+                  }
+                }} className="space-y-4">
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="password"
+                      autoFocus
+                      required
+                      placeholder="Enter your password..."
+                      value={verifyPassword}
+                      onChange={(e) => { setVerifyPassword(e.target.value); setVerifyError(""); }}
+                      className={cn(
+                        "input-field pl-12 w-full py-3 bg-slate-50/50 font-medium text-center",
+                        verifyError && "!border-red-300 !ring-red-100"
+                      )}
+                      autoComplete="current-password"
+                    />
+                  </div>
+                  
+                  {verifyError && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 text-red-600 text-[11px] font-bold bg-red-50 px-4 py-2.5 rounded-xl border border-red-100"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      {verifyError}
+                    </motion.div>
+                  )}
+                  
+                  <div className="flex gap-3 pt-2">
+                    <button 
+                      type="button"
+                      onClick={() => { setIsVerifyModalOpen(false); setVerifyPassword(""); setVerifyError(""); }}
+                      className="btn-secondary flex-1"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={isVerifying || !verifyPassword.trim()}
+                      className="btn-primary flex-1 flex items-center justify-center gap-2"
+                    >
+                      {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Verify & Reveal</span>
+                    </button>
+                  </div>
+                </form>
               </div>
             </motion.div>
           </div>
