@@ -228,6 +228,12 @@ export class AuthService {
       }
     }
 
+    // Update lastLogin timestamp
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
     // Record Login History
     await this.prisma.loginHistory.create({
       data: {

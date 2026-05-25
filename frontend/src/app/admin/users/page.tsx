@@ -205,11 +205,11 @@ export default function AdminUsersPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identity & Contact</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secondary Contact</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assigned Roles</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Security</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Onboarded & Last Access</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Identity & Contact</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Secondary Contact</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Assigned Roles</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Security</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">Onboarded & Last Access</th>
                     <th className="px-6 py-4 text-right"></th>
                   </tr>
                 </thead>
@@ -223,12 +223,12 @@ export default function AdminUsersPage() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-400 border border-slate-200 text-sm">
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 text-sm">
                             {user.fullName ? user.fullName.charAt(0) : user.email.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900 tracking-tight">{user.fullName || "User Identity"}</p>
-                            <p className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5 mt-0.5 uppercase tracking-tighter">
+                            <p className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 mt-0.5 uppercase tracking-tighter">
                               <Mail className="w-3.5 h-3.5" /> {user.email} • @{user.username || user.email.split('@')[0]}
                             </p>
                           </div>
@@ -236,11 +236,11 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-tight">
-                            <Phone className="w-3.5 h-3.5 text-slate-300" /> {user.phoneNumber || "N/A"}
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-700 uppercase tracking-tight">
+                            <Phone className="w-3.5 h-3.5 text-slate-500" /> {user.phoneNumber || "N/A"}
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-tight">
-                            <AtSign className="w-3.5 h-3.5 text-slate-300" /> {user.personalEmail || "N/A"}
+                          <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 uppercase tracking-tight">
+                            <AtSign className="w-3.5 h-3.5 text-slate-500" /> {user.personalEmail || "N/A"}
                           </div>
                         </div>
                       </td>
@@ -252,7 +252,7 @@ export default function AdminUsersPage() {
                             </span>
                           ))}
                           {(!user.roles || user.roles.length === 0) && (
-                            <span className="text-[10px] italic text-slate-400 font-bold uppercase tracking-widest">No Roles</span>
+                            <span className="text-[10px] italic text-slate-600 font-bold uppercase tracking-widest">No Roles</span>
                           )}
                         </div>
                       </td>
@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-bold text-slate-400 uppercase">
+                          <span className="text-[11px] font-bold text-slate-600 uppercase">
                             {formatDate(user.createdAt, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           {user.lastLogin ? (
@@ -276,7 +276,7 @@ export default function AdminUsersPage() {
                               {formatDate(user.lastLogin, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold text-slate-300 uppercase flex items-center gap-1 mt-0.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mt-0.5">
                               <Clock className="w-3 h-3" />
                               Never Logged In
                             </span>
