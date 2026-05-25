@@ -1719,18 +1719,27 @@ export default function TasksPage() {
                           if (!selectedTask?.id || !e.target.files) return;
                           setIsUploading(true);
                           try {
-                            for (let i = 0; i < e.target.files.length; i++) {
-                              const file = e.target.files[i];
-                              const reader = new FileReader();
-                              reader.onloadend = async () => {
-                                await uploadAttachmentMutation.mutateAsync({
-                                  taskId: selectedTask.id,
-                                  filename: file.name,
-                                  base64Data: reader.result as string
-                                });
-                              };
-                              reader.readAsDataURL(file);
-                            }
+                            const files = Array.from(e.target.files);
+                            const uploadPromises = files.map((file) => {
+                              return new Promise<void>((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = async () => {
+                                  try {
+                                    await uploadAttachmentMutation.mutateAsync({
+                                      taskId: selectedTask.id,
+                                      filename: file.name,
+                                      base64Data: reader.result as string
+                                    });
+                                    resolve();
+                                  } catch (err) {
+                                    reject(err);
+                                  }
+                                };
+                                reader.onerror = () => reject(reader.error);
+                                reader.readAsDataURL(file);
+                              });
+                            });
+                            await Promise.all(uploadPromises);
                           } catch (err) {
                             console.error("Upload error", err);
                           } finally {

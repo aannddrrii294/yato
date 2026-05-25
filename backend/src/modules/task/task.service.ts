@@ -542,12 +542,21 @@ export class TaskService {
   }
 
   async addAttachment(taskId: string, base64Data: string, filename: string, uploaderId: string) {
-    // Process single attachment with explicit DataURI parser
+    // Embed the filename in the base64 URL so uploadFile extracts it!
+    let base64WithFilename = base64Data;
+    const parts = base64Data.split(';base64,');
+    if (parts.length === 2 && parts[0].startsWith('data:')) {
+      const mime = parts[0];
+      const nameParam = `;name=${encodeURIComponent(filename)}`;
+      base64WithFilename = `${mime}${nameParam};base64,${parts[1]}`;
+    }
+
+    // Process single attachment with correct argument ordering
     const fileUrls = await this.storageService.processAttachments(
-      [base64Data],
+      [base64WithFilename],
+      uploaderId,
       taskId,
-      'TASK',
-      uploaderId
+      'TASK'
     );
 
     return { fileUrl: fileUrls[0] };
