@@ -149,11 +149,29 @@ export class AuthService {
     });
 
     if (!user) {
+      await this.auditService.log(
+        null,
+        'FAILED_LOGIN_ATTEMPT',
+        'User',
+        null,
+        { email: dto.email, message: 'User email not found', ipAddress, userAgent },
+        ipAddress,
+        userAgent
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Check Lockout
     if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      await this.auditService.log(
+        user.id,
+        'FAILED_LOGIN_LOCKED',
+        'User',
+        user.id,
+        { email: dto.email, message: 'Account is locked', ipAddress, userAgent },
+        ipAddress,
+        userAgent
+      );
       throw new UnauthorizedException('Account locked. Try again later.');
     }
 
@@ -161,6 +179,15 @@ export class AuthService {
 
     if (!isPasswordValid) {
       await this.handleFailedLogin(user.id, user.failedLoginAttempts);
+      await this.auditService.log(
+        user.id,
+        'FAILED_LOGIN_ATTEMPT',
+        'User',
+        user.id,
+        { email: dto.email, message: 'Invalid password', ipAddress, userAgent },
+        ipAddress,
+        userAgent
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -187,6 +214,15 @@ export class AuthService {
         const isMfaValid = authenticator.check(cleanToken, user.mfaSecret);
         
         if (!isMfaValid) {
+          await this.auditService.log(
+            user.id,
+            'FAILED_LOGIN_MFA_FAILED',
+            'User',
+            user.id,
+            { email: dto.email, message: 'Invalid MFA token', ipAddress, userAgent },
+            ipAddress,
+            userAgent
+          );
           throw new UnauthorizedException('Invalid MFA token. Please ensure your device time is synced.');
         }
       }
@@ -312,8 +348,23 @@ export class AuthService {
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
+      await this.auditService.log(
+        userId,
+        'FAILED_IDENTITY_VERIFICATION',
+        'User',
+        userId,
+        { message: 'Invalid verification password' }
+      );
       throw new UnauthorizedException('Invalid password');
     }
+
+    await this.auditService.log(
+      userId,
+      'SUCCESS_IDENTITY_VERIFICATION',
+      'User',
+      userId,
+      { message: 'Identity verified successfully' }
+    );
 
     return { verified: true };
   }
