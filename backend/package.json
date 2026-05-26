@@ -95,6 +95,13 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },
+  "overrides": {
+    "braces": "^3.0.3",
+    "micromatch": "^4.0.8",
+    "ws": "^8.17.1",
+    "axios": "^1.7.4",
+    "path-to-regexp": "^0.1.10"
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",

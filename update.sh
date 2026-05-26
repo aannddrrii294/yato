@@ -78,9 +78,9 @@ export API_URL="http://$SERVER_IP:4000"
 if command -v npm &> /dev/null; then
   echo -e "${YELLOW}📦 Synchronizing host development dependencies...${NC}"
   echo -e "   • Installing backend dependencies on host..."
-  (cd backend && npm install) || echo -e "${RED}Warning: backend npm install on host failed, continuing...${NC}"
+  (cd backend && npm install && npm audit fix) || echo -e "${RED}Warning: backend npm install or audit fix on host failed, continuing...${NC}"
   echo -e "   • Installing frontend dependencies on host..."
-  (cd frontend && npm install) || echo -e "${RED}Warning: frontend npm install on host failed, continuing...${NC}"
+  (cd frontend && npm install && npm audit fix) || echo -e "${RED}Warning: frontend npm install or audit fix on host failed, continuing...${NC}"
 else
   echo "   • npm not available on host, skipping host-level node_modules sync."
 fi
