@@ -18,11 +18,11 @@ import {
   Layers,
   Activity,
   Bell,
-  Loader2,
   QrCode,
   CheckSquare,
   HardDrive,
-  Plug
+  Plug,
+  Coffee
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -39,6 +39,7 @@ const menuItems = [
   { icon: Key, label: "Credentials", href: "/credentials" },
   { icon: QrCode, label: "Asset Registry", href: "/assets" },
   { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
+  { icon: Coffee, label: "HR & Attendance", href: "/timesheets" },
   { icon: HardDrive, label: "File Manager", href: "/files" },
   { icon: History, label: "Audit Logs", href: "/audit" },
   { icon: ShieldCheck, label: "Security & MFA", href: "/profile/security" },

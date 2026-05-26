@@ -27,8 +27,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { envValidationSchema } from './config/env.validation';
 import { IntegrationModule } from './modules/integration/integration.module';
+import { HrmModule } from './modules/hrm/hrm.module';
 
 @Module({
   imports: [
@@ -92,6 +92,7 @@ import { IntegrationModule } from './modules/integration/integration.module';
     TaskModule,
     StorageModule,
     IntegrationModule,
+    HrmModule,
   ],
   providers: [
     {

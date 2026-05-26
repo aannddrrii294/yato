@@ -54,6 +54,22 @@ model User {
   taskComments      TaskComment[]  @relation("TaskCommentAuthor")
   createdTemplates  TaskTemplate[] @relation("UserCreatedTemplates")
   uploadedFiles     StorageFile[]  @relation("UserUploadedFiles")
+
+  // Division and HRM Relations
+  divisionId            String?
+  division              Division?                 @relation("UserDivision", fields: [divisionId], references: [id])
+  supervisorOfDivisions Division[]               @relation("DivisionSupervisor")
+  managedDivisions      Division[]               @relation("DivisionManager")
+  headedDivisions       Division[]               @relation("DivisionHead")
+  shifts                WorkShift[]              @relation("UserShifts")
+  swapRequestsRequested ShiftSwapRequest[]       @relation("SwapRequester")
+  swapRequestsTargeted  ShiftSwapRequest[]       @relation("SwapTargetUser")
+  timesheets            Timesheet[]              @relation("UserTimesheets")
+  attendanceAdjustments AttendanceAdjustmentLog[] @relation("AdminAdjustments")
+  approvedOvertimes     Overtime[]               @relation("ApprovedOvertimes")
+  leaves                LeaveRequest[]           @relation("UserLeaves")
+  approvedLeaves        LeaveApproval[]          @relation("ApprovedByLeave")
+  leaveBalance          LeaveBalance?
 }
 
 model Role {
@@ -472,3 +488,195 @@ model StorageFile {
   @@index([driver])
   @@index([entityId])
 }
+
+// ==========================================
+// HR & SHIFT ATTENDANCE ENTERPRISE MODELS
+// ==========================================
+
+// 1. Tabel Divisi / Departemen Perusahaan
+model Division {
+  id           String   @id @default(uuid())
+  name         String   @unique // e.g., "NOC", "IT Support", "Finance", "HR"
+  description  String?
+  
+  // Penanggung Jawab Divisi (Untuk Auto-Routing Approval Cuti secara Dinamis)
+  supervisorId String?
+  supervisor   User?    @relation("DivisionSupervisor", fields: [supervisorId], references: [id])
+  managerId    String?
+  manager      User?    @relation("DivisionManager", fields: [managerId], references: [id])
+  headId       String?
+  head         User?    @relation("DivisionHead", fields: [headId], references: [id])
+  
+  users        User[]   @relation("UserDivision")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Kategori Shift Umum (Bisa digunakan oleh seluruh departemen di perusahaan)
+model ShiftCategory {
+  id           String      @id @default(uuid())
+  name         String      @unique // e.g., "Morning Shift", "Night Shift", "Middle Shift"
+  startTime    String      // "09:00"
+  endTime      String      // "18:00"
+  breakStart   String      // "12:00"
+  breakEnd     String      // "13:00"
+  colorCode    String      @default("#3B82F6")
+  allowanceAmt Float       @default(0.0) // Insentif uang saku khusus shift ini (misal shift malam)
+  description  String?
+  shifts       WorkShift[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Jadwal Kerja Harian Staf
+model WorkShift {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation("UserShifts", fields: [userId], references: [id])
+  shiftCategoryId String
+  shiftCategory   ShiftCategory @relation(fields: [shiftCategoryId], references: [id])
+  date            DateTime      
+  notes           String?
+  
+  // Relasi Tukar Shift
+  swapRequestsRequested ShiftSwapRequest[] @relation("RequesterShift")
+  swapRequestsTargeted  ShiftSwapRequest[] @relation("TargetShift")
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+// Pengajuan Tukar Shift (Shift Swap)
+model ShiftSwapRequest {
+  id               String    @id @default(uuid())
+  requesterId      String
+  requester        User      @relation("SwapRequester", fields: [requesterId], references: [id])
+  targetUserId     String
+  targetUser       User      @relation("SwapTargetUser", fields: [targetUserId], references: [id])
+  
+  requesterShiftId String
+  requesterShift   WorkShift @relation("RequesterShift", fields: [requesterShiftId], references: [id], onDelete: Cascade)
+  targetShiftId    String
+  targetShift      WorkShift @relation("TargetShift", fields: [targetShiftId], references: [id], onDelete: Cascade)
+  
+  status           String    @default("PENDING") // PENDING, TARGET_ACCEPTED, APPROVED, REJECTED
+  rejectionNotes   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// Timesheet Utama Harian
+model Timesheet {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation("UserTimesheets", fields: [userId], references: [id])
+  date           DateTime       @default(now())
+  status         String         @default("PRESENT") // PRESENT, LATE, ABSENT, ON_LEAVE
+  totalHours     Float          @default(0.0) // Hasil akumulasi otomatis dari log masuk-keluar
+  notes          String?        // Laporan pekerjaan staf hari tersebut
+  latenessReason String?        // Alasan jika berstatus LATE (Terlambat)
+  logs           TimesheetLog[] // Relasi Multi Check-in/Check-out
+  overtimes      Overtime[]     // Relasi Pengajuan Lembur
+  
+  // Audit Log Perubahan Manual oleh Admin
+  adjustments    AttendanceAdjustmentLog[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, date])
+}
+
+// Log Masuk-Keluar Staf (Mendukung Multi-Log dalam Sehari)
+model TimesheetLog {
+  id          String    @id @default(uuid())
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  type        String    // CHECK_IN, CHECK_OUT
+  timestamp   DateTime  @default(now())
+  ipAddress   String?
+  location    String?
+  device      String?
+  createdAt   DateTime  @default(now())
+}
+
+// Audit Log Koreksi Absensi Manual oleh Admin
+model AttendanceAdjustmentLog {
+  id          String    @id @default(uuid())
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  adminId     String    // Admin yang melakukan koreksi
+  admin       User      @relation("AdminAdjustments", fields: [adminId], references: [id])
+  changedFrom String    // Jam sebelum koreksi
+  changedTo   String    // Jam setelah koreksi
+  reason      String    // Alasan manual adjustment
+  createdAt   DateTime  @default(now())
+}
+
+// Pengajuan Lembur (Overtime)
+model Overtime {
+  id          String    @id @default(uuid())
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  hoursClaimed Float     // Jumlah jam lembur yang diklaim
+  reason      String    // Alasan lembur (misal: Maintenance database server)
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy  String?
+  admin       User?     @relation("ApprovedOvertimes", fields: [approvedBy], references: [id])
+  notes       String?   // Catatan persetujuan / penolakan
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Pengajuan Cuti (Mendukung Multi-Level Approval)
+model LeaveRequest {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation("UserLeaves", fields: [userId], references: [id])
+  type        String          // ANNUAL_LEAVE, SICK_LEAVE, PERMIT, etc.
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      String          @default("PENDING") // PENDING, APPROVED, REJECTED
+  attachments String[]
+  approvals   LeaveApproval[] // Relasi Multi-level Approval
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+// Rekaman Persetujuan Berjenjang untuk Cuti
+model LeaveApproval {
+  id             String       @id @default(uuid())
+  leaveRequestId String
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  level          Int          // 1 (Supervisor), 2 (Manager), 3 (Head)
+  roleName       String       // e.g., "SUPERVISOR", "MANAGER", "DEPT_HEAD"
+  approverId     String?      // Siapa yang mengambil aksi
+  approver       User?        @relation("ApprovedByLeave", fields: [approverId], references: [id])
+  status         String       @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes          String?      // Catatan opsional jika disetujui, ATAU catatan wajib jika DITOLAK
+  actionedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([leaveRequestId, level])
+}
+
+// Kuota Cuti Karyawan (Leave Balance)
+model LeaveBalance {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  allocated   Int      @default(12) // Jatah total per tahun (default 12)
+  used        Int      @default(0)  // Jumlah yang sudah digunakan
+  remaining   Int      @default(12) // Sisa kuota (allocated - used)
+  year        Int      // Tahun berlaku (contoh: 2026)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
