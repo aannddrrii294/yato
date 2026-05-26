@@ -15,7 +15,7 @@ Only the latest major and minor releases receive active security updates.
 
 If you discover a security vulnerability in YATO, please do **not** open a public issue. Instead, report it privately through one of the following methods:
 
-- **Email**: Send a detailed description of the vulnerability to [support@yato.local](mailto:support@yato.local).
+- **Email**: Send a detailed description of the vulnerability to [support@honet.web.id](mailto:support@honet.web.id).
 - **GPG Key**: If you wish to encrypt your email, you can request our security team's GPG public key.
 
 Please include the following information in your report:
