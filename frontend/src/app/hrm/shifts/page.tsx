@@ -45,7 +45,7 @@ export default function ShiftTradesPage() {
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      const res = await api.get("/user");
+      const res = await api.get("/users");
       return res.data;
     },
   });
