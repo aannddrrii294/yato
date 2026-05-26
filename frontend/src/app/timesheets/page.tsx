@@ -273,7 +273,7 @@ export default function TimesheetsPage() {
         <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-40">
           <PageHeader
             title="HR & Shift Attendance"
-            description="Enterprise timesheets, attendance logs, and multi-level leave authorization workspace."
+            subtitle="Enterprise timesheets, attendance logs, and multi-level leave authorization workspace."
           />
           <MobileNav />
         </header>
