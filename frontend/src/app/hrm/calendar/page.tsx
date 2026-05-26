@@ -6,14 +6,17 @@ import { MobileNav } from "@/components/MobileNav";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
-  Loader2
+  Loader2,
+  Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
 
 const getFormattedDate = (date: Date) => {
   return date.toISOString().split("T")[0];
@@ -38,13 +41,19 @@ export default function CalendarPage() {
       <Sidebar />
 
       <main className="page-container flex-1">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 border-b border-slate-100 pb-5">
+          <div className="flex-1">
             <PageHeader 
               title="Calendar Timesheets" 
               subtitle="Monthly timesheet grid overview, work hour metrics, and detailed attendance records" 
             />
           </div>
+          <Link href="/hrm/attendance">
+            <button className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2.5 shadow-lg shadow-blue-500/10 hover:shadow-xl transition-all cursor-pointer">
+              <Clock className="w-4 h-4" />
+              Check-in / Check-out Panel
+            </button>
+          </Link>
         </header>
 
         <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
