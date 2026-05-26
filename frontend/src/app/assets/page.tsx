@@ -988,7 +988,15 @@ export default function AssetsPage() {
                         .map(([key, val]: any) => (
                         <div key={key} className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-1">
                           <span className="text-[9px] font-extrabold text-indigo-500 uppercase tracking-widest">{key}</span>
-                          <span className="text-xs font-bold text-slate-800">{val || 'N/A'}</span>
+                          <span className="text-xs font-bold text-slate-800">
+                            {typeof val === 'boolean' ? (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${val ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                                {val ? 'YES' : 'NO'}
+                              </span>
+                            ) : (
+                              val || 'N/A'
+                            )}
+                          </span>
                         </div>
                       ))}
                     </div>

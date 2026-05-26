@@ -727,7 +727,15 @@ export default function CredentialsPage() {
                     <div key={key} className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{key}</p>
-                        <p className="text-sm font-bold text-slate-900">{String(value)}</p>
+                        <div className="text-sm font-bold text-slate-900">
+                          {typeof value === 'boolean' ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${value ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                              {value ? 'YES' : 'NO'}
+                            </span>
+                          ) : (
+                            String(value)
+                          )}
+                        </div>
                       </div>
                       <button 
                         onClick={() => handleCopy(String(value), key)}
