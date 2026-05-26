@@ -453,10 +453,26 @@ export class HrmService {
   async getMyLeaves(userId: string) {
     return this.prisma.leaveRequest.findMany({
       where: { userId },
-      include: { approvals: true },
+      include: {
+        user: {
+          include: {
+            division: true,
+          },
+        },
+        approvals: {
+          include: {
+            approver: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
+
 
   async getPendingApprovals(approverId: string) {
     // A user can approve if they are mapped as SPV, Manager, or Head in a division

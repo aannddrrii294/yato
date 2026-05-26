@@ -42,10 +42,15 @@ import { cn } from "@/lib/utils";
 
 export default function SystemConfigPage() {
   const { refreshBranding } = useBranding();
-  const [activeTab, setActiveTab] = useState<"notifications" | "identity" | "database" | "catalogs" | "orchestration" | "api-portal" | "tuning">("notifications");
+  const [activeTab, setActiveTab] = useState<"notifications" | "identity" | "database" | "catalogs" | "orchestration" | "api-portal" | "tuning" | "hrm-security">("notifications");
   const [isAddCatalogModalOpen, setIsAddCatalogModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [officeIpEnabled, setOfficeIpEnabled] = useState<boolean>(false);
+  const [officeIpWhitelist, setOfficeIpWhitelist] = useState<string>("127.0.0.1, 192.168.201.18");
+  const [detectedIp, setDetectedIp] = useState<string>("");
+
+
   const [catalogs, setCatalogs] = useState<any[]>([]);
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true);
 
@@ -283,6 +288,12 @@ export default function SystemConfigPage() {
       if (settings.AUTOMATED_PROVISIONING_ENABLED) setAutoProvisioning(settings.AUTOMATED_PROVISIONING_ENABLED.enabled);
       if (settings.TIMEZONE_CONFIG) setTimezoneConfig(settings.TIMEZONE_CONFIG);
       if (settings.SERVER_TIMEZONE) setServerTimezone(settings.SERVER_TIMEZONE);
+      if (settings.office_ip_enabled !== undefined) {
+        setOfficeIpEnabled(settings.office_ip_enabled === "true" || settings.office_ip_enabled === true);
+      }
+      if (settings.office_ip_whitelist !== undefined) {
+        setOfficeIpWhitelist(settings.office_ip_whitelist);
+      }
       if (settings.BRANDING_CONFIG) {
         setBrandingConfig(prev => ({
           ...prev,
@@ -327,6 +338,16 @@ export default function SystemConfigPage() {
     fetchTuningConfig();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === "hrm-security") {
+      fetch("https://api.ipify.org?format=json")
+        .then(res => res.json())
+        .then(data => setDetectedIp(data.ip))
+        .catch(err => console.error("Failed to detect client public IP:", err));
+    }
+  }, [activeTab]);
+
+
   const handleSaveConfig = async () => {
     setIsSaving(true);
     setSaveStatus("idle");
@@ -339,7 +360,9 @@ export default function SystemConfigPage() {
         AUTOMATED_PROVISIONING_ENABLED: { enabled: autoProvisioning },
         TIMEZONE_CONFIG: timezoneConfig,
         BRANDING_CONFIG: brandingConfig,
-        NOTIFICATION_ROUTING_RULES: routingRules
+        NOTIFICATION_ROUTING_RULES: routingRules,
+        office_ip_enabled: officeIpEnabled ? "true" : "false",
+        office_ip_whitelist: officeIpWhitelist
       });
       setSaveStatus("success");
       // Instantly apply branding across sidebar, header, browser title, and favicon!
@@ -351,6 +374,7 @@ export default function SystemConfigPage() {
       setIsSaving(false);
     }
   };
+
 
   const handleAddCatalog = async () => {
     if (!newCatalog.name || !newCatalog.value) return;
@@ -531,6 +555,13 @@ export default function SystemConfigPage() {
           >
             <Cpu className="w-4 h-4" />
             Performance & Tuning
+          </button>
+          <button 
+            onClick={() => setActiveTab('hrm-security')}
+            className={cn("px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2", activeTab === 'hrm-security' ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:text-slate-900 hover:bg-white")}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            HRM & Security Whitelisting
           </button>
         </div>
 
@@ -2128,6 +2159,99 @@ export default function SystemConfigPage() {
             </section>
           </div>
         </div>
+        )}
+
+        {activeTab === 'hrm-security' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 animate-fade-in">
+            {/* IP Whitelisting Configurations Card */}
+            <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
+              <div className="flex items-center gap-3 mb-8">
+                <ShieldCheck className="w-5 h-5 text-blue-600" />
+                <h2 className="text-sm font-bold text-slate-900">HRM Anti-Fraud Security Settings</h2>
+              </div>
+
+              <div className="space-y-6">
+                {/* Office IP Toggle */}
+                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="space-y-0.5">
+                    <label className="text-xs font-black text-slate-800 uppercase tracking-wider">Office IP Whitelisting</label>
+                    <p className="text-[10px] text-slate-500 font-medium">Restrict clock-in/out exclusively to registered corporate IPs.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={officeIpEnabled}
+                      onChange={(e) => setOfficeIpEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                {/* Whitelist IP input field */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Authorized Corporate IP Addresses</label>
+                  <textarea 
+                    className="input-field w-full p-4 font-mono text-xs text-slate-800 bg-white"
+                    placeholder="e.g. 127.0.0.1, 103.14.22.81, 182.253.112.5"
+                    rows={4}
+                    value={officeIpWhitelist}
+                    onChange={(e) => setOfficeIpWhitelist(e.target.value)}
+                  />
+                  <p className="text-[10px] text-slate-400 font-medium px-1 leading-relaxed">
+                    Provide a comma-separated list of your corporate network's public IP addresses. When whitelisting is enabled, all Clock-in/out attempts from unlisted IPs will be automatically blocked.
+                  </p>
+                </div>
+
+                {/* Save Configurations button */}
+                <button
+                  onClick={handleSaveConfig}
+                  disabled={isSaving}
+                  className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Security Configurations
+                </button>
+              </div>
+            </section>
+
+            {/* Smart Diagnostics Card */}
+            <div className="space-y-8">
+              <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10 bg-slate-50/30 border border-slate-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <Globe className="w-5 h-5 text-blue-600 animate-pulse" />
+                  <h2 className="text-sm font-bold text-slate-900">Administrator IP Diagnostics</h2>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium mb-6 leading-relaxed">
+                  To prevent locking yourself out of standard HRM administrative functionalities, verify your current network's public IP address before saving changes.
+                </p>
+
+                <div className="bg-white border border-slate-200/60 p-5 rounded-2xl space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-500">Detected Public IP:</span>
+                    <span className="font-mono font-black text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">
+                      {detectedIp || "Detecting..."}
+                    </span>
+                  </div>
+
+                  {detectedIp && (
+                    <button
+                      onClick={() => {
+                        const currentList = officeIpWhitelist.split(',').map(x => x.trim()).filter(Boolean);
+                        if (!currentList.includes(detectedIp)) {
+                          currentList.push(detectedIp);
+                          setOfficeIpWhitelist(currentList.join(', '));
+                        }
+                      }}
+                      className="w-full py-3 bg-slate-900 hover:bg-slate-950 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider text-center block transition-colors cursor-pointer"
+                    >
+                      🚀 Add My Current IP to Whitelist
+                    </button>
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
         )}
 
         <div className="pb-20" />

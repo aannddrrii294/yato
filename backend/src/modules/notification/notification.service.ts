@@ -167,24 +167,47 @@ export class NotificationService {
     }
   }
 
+  async isUserOnLeave(userId: string): Promise<boolean> {
+    try {
+      const now = new Date();
+      const leave = await this.prisma.leaveRequest.findFirst({
+        where: {
+          userId,
+          status: 'APPROVED',
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+      });
+      return !!leave;
+    } catch (e) {
+      this.logger.error(`Error checking user leave status: ${e.message}`);
+      return false;
+    }
+  }
+
   async sendToUser(userId: string, title: string, message: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
+    const isOnLeave = await this.isUserOnLeave(userId);
+    if (isOnLeave) {
+      this.logger.log(`User ${user.fullName} (${userId}) is currently ON LEAVE. Auto-snoozing external alerts.`);
+    }
+
     const fullMessage = `<b>${title}</b>\n\n${message}`;
 
-    // 1. Try Telegram if ID exists
-    if (user.telegramId) {
+    // 1. Try Telegram if ID exists (snoozed if on leave)
+    if (user.telegramId && !isOnLeave) {
       await this.sendTelegram(user.telegramId, fullMessage);
     }
 
-    // 2. Try WhatsApp if phone exists
-    if (user.phoneNumber) {
+    // 2. Try WhatsApp if phone exists (snoozed if on leave)
+    if (user.phoneNumber && !isOnLeave) {
       await this.sendWhatsApp(user.phoneNumber, fullMessage);
     }
 
-    // 3. Try Email if email exists
-    if (user.email) {
+    // 3. Try Email if email exists (snoozed if on leave)
+    if (user.email && !isOnLeave) {
       const plainMessage = message.replace(/<[^>]*>/g, '');
       await this.sendEmail(user.email, title, plainMessage);
     }
@@ -206,10 +229,15 @@ export class NotificationService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
+    const isOnLeave = await this.isUserOnLeave(userId);
+    if (isOnLeave) {
+      this.logger.log(`User ${user.fullName} (${userId}) is currently ON LEAVE. Auto-snoozing external queued alerts.`);
+    }
+
     const plainMessage = message.replace(/<[^>]*>/g, '');
 
-    // 1. Queue Telegram if ID exists
-    if (user.telegramId) {
+    // 1. Queue Telegram if ID exists (snoozed if on leave)
+    if (user.telegramId && !isOnLeave) {
       this.logger.log(`Queuing Telegram notification for user ${user.id} (${user.telegramId})`);
       this.eventEmitter.emit('notification.trigger', {
         userId: user.id,
@@ -220,8 +248,8 @@ export class NotificationService {
       });
     }
 
-    // 2. Queue WhatsApp if phone exists
-    if (user.phoneNumber) {
+    // 2. Queue WhatsApp if phone exists (snoozed if on leave)
+    if (user.phoneNumber && !isOnLeave) {
       this.logger.log(`Queuing WhatsApp notification for user ${user.id} (${user.phoneNumber})`);
       this.eventEmitter.emit('notification.trigger', {
         userId: user.id,
@@ -232,8 +260,8 @@ export class NotificationService {
       });
     }
 
-    // 3. Queue Email if email exists
-    if (user.email) {
+    // 3. Queue Email if email exists (snoozed if on leave)
+    if (user.email && !isOnLeave) {
       this.logger.log(`Queuing Email notification for user ${user.id} (${user.email})`);
       this.eventEmitter.emit('notification.trigger', {
         userId: user.id,
@@ -256,6 +284,7 @@ export class NotificationService {
     // 4. Always create internal notification immediately
     await this.create(userId, title, message, finalLink ? 'TICKET_UPDATE' : 'INFO', finalLink);
   }
+
 
   async getRecipientsForTicket(params: {
     type: 'SUPPORT' | 'VM' | 'SERVICE';

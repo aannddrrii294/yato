@@ -17,6 +17,8 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 export default function DivisionMappingsPage() {
   const queryClient = useQueryClient();
