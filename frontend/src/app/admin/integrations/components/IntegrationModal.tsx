@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plug, Server, Activity, Bell, Loader2, AlertCircle } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { X, Plug, Loader2, AlertCircle, HelpCircle } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -13,42 +13,74 @@ interface IntegrationModalProps {
 
 export function IntegrationModal({ isOpen, onClose, editingIntegration }: IntegrationModalProps) {
   const queryClient = useQueryClient();
-  const [jsonError, setJsonError] = useState("");
+  const [selectedPluginKey, setSelectedPluginKey] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     type: "PROVISIONING",
-    connectorKey: "",
     endpointUrl: "",
     authKey: "",
-    configStr: "{\n  \n}",
     isActive: true
   });
+  
+  // Custom dynamic form values based on selected plugin fields
+  const [dynamicValues, setDynamicValues] = useState<Record<string, string>>({});
+  const [validationError, setValidationError] = useState("");
+
+  // Fetch all available connector plugins
+  const { data: plugins } = useQuery<any[]>({
+    queryKey: ["connector-plugins"],
+    queryFn: async () => {
+      const response = await api.get("/integrations/plugins");
+      return response.data;
+    },
+    enabled: isOpen
+  });
+
+  // Find currently selected plugin template
+  const activePlugin = plugins?.find(p => p.connectorKey === selectedPluginKey);
 
   useEffect(() => {
     if (editingIntegration) {
       setFormData({
         name: editingIntegration.name,
         type: editingIntegration.type,
-        connectorKey: editingIntegration.connectorKey,
-        endpointUrl: editingIntegration.endpointUrl,
+        endpointUrl: editingIntegration.endpointUrl || "",
         authKey: editingIntegration.authKey || "",
-        configStr: JSON.stringify(editingIntegration.config || {}, null, 2),
         isActive: editingIntegration.isActive
       });
-      setJsonError("");
+      setSelectedPluginKey(editingIntegration.connectorKey || "");
+      setDynamicValues(editingIntegration.config || {});
+      setValidationError("");
     } else {
       setFormData({
         name: "",
         type: "PROVISIONING",
-        connectorKey: "",
         endpointUrl: "",
         authKey: "",
-        configStr: "{\n  \n}",
         isActive: true
       });
-      setJsonError("");
+      setSelectedPluginKey("");
+      setDynamicValues({});
+      setValidationError("");
     }
-  }, [editingIntegration, isOpen]);
+  }, [editingIntegration, isOpen, plugins]);
+
+  // Set default endpointUrl and dynamic field templates when selected plugin changes
+  useEffect(() => {
+    if (!editingIntegration && activePlugin) {
+      setFormData(prev => ({
+        ...prev,
+        type: activePlugin.type,
+        endpointUrl: activePlugin.connectorKey === 'proxmox-ve' ? 'https://localhost:8006' : 'http://localhost'
+      }));
+      
+      const defaults: Record<string, string> = {};
+      activePlugin.fields?.forEach((f: any) => {
+        defaults[f.key] = "";
+      });
+      setDynamicValues(defaults);
+    }
+  }, [selectedPluginKey, activePlugin, editingIntegration]);
 
   const addMutation = useMutation({
     mutationFn: (data: any) => api.post("/integrations", data),
@@ -68,24 +100,31 @@ export function IntegrationModal({ isOpen, onClose, editingIntegration }: Integr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setJsonError("");
-    
-    let parsedConfig = {};
-    try {
-      parsedConfig = JSON.parse(formData.configStr);
-    } catch (err: any) {
-      setJsonError(`Invalid JSON format: ${err.message}`);
+    setValidationError("");
+
+    if (!selectedPluginKey) {
+      setValidationError("Please select a connector plugin template.");
       return;
+    }
+
+    // Validate that all required dynamic fields are filled
+    if (activePlugin?.fields) {
+      for (const field of activePlugin.fields) {
+        if (field.required && !dynamicValues[field.key]) {
+          setValidationError(`Field "${field.label}" is required.`);
+          return;
+        }
+      }
     }
 
     const payload = {
       name: formData.name,
       type: formData.type,
-      connectorKey: formData.connectorKey,
+      connectorKey: selectedPluginKey,
       endpointUrl: formData.endpointUrl,
       authKey: formData.authKey,
       isActive: formData.isActive,
-      config: parsedConfig
+      config: dynamicValues
     };
 
     if (editingIntegration) {
@@ -93,6 +132,14 @@ export function IntegrationModal({ isOpen, onClose, editingIntegration }: Integr
     } else {
       addMutation.mutate(payload);
     }
+  };
+
+  const handleDynamicChange = (key: string, val: string) => {
+    setDynamicValues(prev => ({
+      ...prev,
+      [key]: val
+    }));
+    setValidationError("");
   };
 
   return (
@@ -111,8 +158,8 @@ export function IntegrationModal({ isOpen, onClose, editingIntegration }: Integr
                   <Plug className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">{editingIntegration ? 'Edit Integration' : 'Register Integration'}</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Configure dynamic plugin endpoint</p>
+                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">{editingIntegration ? 'Edit Connection' : 'Add Active Connection'}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Configure live connection from connector plugin</p>
                 </div>
               </div>
               <button onClick={onClose} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm">
@@ -122,84 +169,110 @@ export function IntegrationModal({ isOpen, onClose, editingIntegration }: Integr
 
             <div className="overflow-y-auto custom-scrollbar flex-1">
               <form id="integration-form" onSubmit={handleSubmit} className="p-8 space-y-6">
+                
+                {validationError && (
+                  <div className="flex items-start gap-2.5 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-xs font-bold animate-pulse">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{validationError}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-6">
                   
                   <div className="space-y-1.5 col-span-2">
-                    <label>Integration Name</label>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Connection Name</label>
                     <input 
                       type="text" 
                       required
                       className="input-field w-full py-3.5"
-                      placeholder="e.g. Proxmox Cluster Prod 1"
+                      placeholder="e.g. Jakarta Main Proxmox cluster"
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label>Plugin Type</label>
+                  <div className="space-y-1.5 col-span-2">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Connector Plugin Template</label>
                     <select 
-                      className="input-field w-full py-3.5 appearance-none bg-white"
-                      value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value})}
+                      className="input-field w-full py-3.5 appearance-none bg-white font-bold"
+                      value={selectedPluginKey}
+                      onChange={e => setSelectedPluginKey(e.target.value)}
+                      disabled={!!editingIntegration} // Prevent key modifications on edit
                     >
-                      <option value="PROVISIONING">Provisioning (Outbound)</option>
-                      <option value="MONITORING">Monitoring (Inbound/Webhooks)</option>
-                      <option value="NOTIFICATION">Notification Gateway</option>
+                      <option value="">-- Choose Plugin Connector --</option>
+                      {plugins?.map((plugin) => (
+                        <option key={plugin.connectorKey} value={plugin.connectorKey}>
+                          {plugin.name} ({plugin.type})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label>Connector Key</label>
-                    <input 
-                      type="text" 
-                      required
-                      className="input-field w-full py-3.5 font-mono text-sm"
-                      placeholder="e.g. proxmox-ve"
-                      value={formData.connectorKey}
-                      onChange={e => setFormData({...formData, connectorKey: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 col-span-2">
-                    <label>Endpoint URL</label>
-                    <input 
-                      type="url" 
-                      required
-                      className="input-field w-full py-3.5 font-mono text-sm"
-                      placeholder="http://yato-plugin-proxmox:5001"
-                      value={formData.endpointUrl}
-                      onChange={e => setFormData({...formData, endpointUrl: e.target.value})}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 col-span-2">
-                    <div className="flex justify-between items-end mb-1">
-                      <label>Dynamic Configuration Secrets (JSON)</label>
-                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">Vault Encrypted</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mb-2 leading-relaxed">
-                      Enter the required credentials (API keys, host URLs) for this plugin in raw JSON format. This will be encrypted by the YATO vault before saving.
-                    </p>
-                    <textarea 
-                      className={cn(
-                        "input-field w-full h-40 font-mono text-sm leading-relaxed py-3 resize-none bg-slate-900 text-slate-300",
-                        jsonError ? "border-rose-500 ring-rose-500/20" : ""
-                      )}
-                      spellCheck={false}
-                      value={formData.configStr}
-                      onChange={e => {
-                        setFormData({...formData, configStr: e.target.value});
-                        setJsonError("");
-                      }}
-                    />
-                    {jsonError && (
-                      <div className="flex items-center gap-1.5 text-rose-500 text-xs font-bold mt-2">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        <span>{jsonError}</span>
+                  {activePlugin && (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Type</label>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          className="input-field w-full py-3.5 bg-slate-50 text-slate-500 font-bold"
+                          value={formData.type}
+                        />
                       </div>
-                    )}
-                  </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Endpoint URL</label>
+                        <input 
+                          type="text" 
+                          required
+                          className="input-field w-full py-3.5 font-mono text-sm"
+                          placeholder="e.g. https://192.168.201.50:8006"
+                          value={formData.endpointUrl}
+                          onChange={e => setFormData({...formData, endpointUrl: e.target.value})}
+                        />
+                      </div>
+
+                      {/* DYNAMIC FORM FIELDS GENERATED ON THE FLY */}
+                      <div className="col-span-2 border-t border-slate-100 pt-6 mt-2 space-y-5">
+                        <h4 className="text-xs font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                          <Plug className="w-4 h-4 text-blue-600" />
+                          <span>CONNECTOR CONFIGURATION PARAMETERS</span>
+                          <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider ml-auto">Encrypted Vault</span>
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-5">
+                          {activePlugin.fields?.map((field: any) => (
+                            <div key={field.key} className={cn("space-y-1.5", field.type === 'textarea' ? 'col-span-2' : '')}>
+                              <div className="flex justify-between">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                  {field.label} {field.required && <span className="text-rose-500">*</span>}
+                                </label>
+                              </div>
+                              
+                              {field.type === 'textarea' ? (
+                                <textarea
+                                  required={field.required}
+                                  placeholder={field.placeholder}
+                                  className="input-field w-full h-24 font-mono text-xs py-3"
+                                  value={dynamicValues[field.key] || ""}
+                                  onChange={e => handleDynamicChange(field.key, e.target.value)}
+                                />
+                              ) : (
+                                <input
+                                  type={field.type || "text"}
+                                  required={field.required}
+                                  placeholder={field.placeholder}
+                                  className="input-field w-full py-3 font-medium"
+                                  value={dynamicValues[field.key] || ""}
+                                  onChange={e => handleDynamicChange(field.key, e.target.value)}
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </form>
             </div>
@@ -212,7 +285,7 @@ export function IntegrationModal({ isOpen, onClose, editingIntegration }: Integr
                 className="btn-primary w-full py-4 flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 {(addMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plug className="w-5 h-5" />}
-                <span>{editingIntegration ? 'Save Configuration' : 'Register Integration'}</span>
+                <span>{editingIntegration ? 'Save Connection' : 'Add Connection'}</span>
               </button>
             </div>
           </motion.div>

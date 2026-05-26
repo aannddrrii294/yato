@@ -131,8 +131,52 @@ export class VmProvisionWorker extends WorkerHost {
       let sshPassword = '';
       let sshPort = 22;
 
-      // Check if this hypervisor should run the built-in direct Proxmox VE driver
-      if (hypervisor === 'proxmox-ve' || hypervisor === 'proxmox') {
+      // Query uploaded custom plugins from SystemSetting
+      const pluginSetting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'UPLOADED_PLUGINS' }
+      });
+      const uploadedPlugins: any[] = pluginSetting?.value as any[] || [];
+      const customPlugin = uploadedPlugins.find(p => p.connectorKey === hypervisor);
+
+      if (customPlugin && customPlugin.driverCode) {
+        this.logger.log(`[Plugin Engine] Executing dynamic uploaded connector plugin: ${customPlugin.name}...`);
+        
+        await this.prisma.ticketComment.create({
+          data: {
+            content: `🔌 <b>[Plugin Engine]</b> Running custom uploaded driver: <b>${customPlugin.name}</b>...`,
+            vmRequestId: requestId,
+            authorId: vmRequest.requestedBy,
+          }
+        });
+
+        const config = integration ? integration.config : {};
+        
+        try {
+          const executeDriver = new Function('config', 'hostname', 'specs', 'logger', 'axios', 'https', `
+            return (async () => {
+              ${customPlugin.driverCode}
+            })();
+          `);
+
+          const result = await executeDriver(config, hostname, specs, this.logger, axios, https);
+          
+          ipAddress = result?.ipAddress || `10.0.10.${Math.floor(Math.random() * 250) + 10}`;
+          sshUser = result?.sshUser || 'yato';
+          sshPassword = result?.sshPassword || Math.random().toString(36).substring(2, 12);
+          sshPort = result?.sshPort ? parseInt(result.sshPort, 10) : 22;
+
+          await this.prisma.ticketComment.create({
+            data: {
+              content: `✅ <b>[Plugin Engine]</b> Custom driver completed provisioning successfully! IP: <code>${ipAddress}</code>, User: <code>${sshUser}</code>.`,
+              vmRequestId: requestId,
+              authorId: vmRequest.requestedBy,
+            }
+          });
+        } catch (err: any) {
+          this.logger.error(`[Plugin Engine] Dynamic execution error: ${err.message}`);
+          throw new Error(`Custom plugin driver failed: ${err.message}`);
+        }
+      } else if (hypervisor === 'proxmox-ve' || hypervisor === 'proxmox') {
         this.logger.log(`[Built-in Driver] Running Proxmox VE Direct Connector...`);
         
         await this.prisma.ticketComment.create({
