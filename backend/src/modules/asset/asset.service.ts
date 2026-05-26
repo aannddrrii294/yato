@@ -126,7 +126,7 @@ export class AssetService {
           location: dto.location,
           rack: dto.rack,
           uPosition: dto.uPosition,
-          ownerId: dto.ownerId,
+          ownerId: dto.ownerId || null,
           qrCodeUrl,
           metadata: dto.metadata,
           healthStatus: 'HEALTHY',
@@ -178,7 +178,7 @@ export class AssetService {
           location: dto.location,
           rack: dto.rack,
           uPosition: dto.uPosition,
-          ownerId: dto.ownerId,
+          ownerId: dto.ownerId || null,
           metadata: dto.metadata,
         },
       });
