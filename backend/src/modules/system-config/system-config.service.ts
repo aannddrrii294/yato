@@ -186,30 +186,33 @@ export class SystemConfigService {
       }
     }
 
-    // 4. Provisioning Engine (Proxmox Plugin Check)
+    // 4. Provisioning Engine (Redis Queue Broker Health Check)
     let engineStatus = 'HEALTHY';
     let engineLatency = 0;
     try {
+      const net = require('net');
       const start = Date.now();
-      await axios.get('http://yato-plugin-proxmox:5001', { timeout: 2000 });
+      const redisHost = process.env.REDIS_HOST || 'redis';
+      const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+      
+      await new Promise<void>((resolve, reject) => {
+        const socket = net.createConnection(redisPort, redisHost);
+        socket.setTimeout(2000);
+        socket.on('connect', () => {
+          socket.end();
+          resolve();
+        });
+        socket.on('error', (err: any) => {
+          reject(err);
+        });
+        socket.on('timeout', () => {
+          socket.destroy();
+          reject(new Error('Timeout'));
+        });
+      });
       engineLatency = Date.now() - start;
-    } catch (e: any) {
-      if (e.response) {
-        engineLatency = Date.now() - (e.config?.metadata?.startTime || Date.now() - 5);
-      } else {
-        // Try fallback on localhost
-        try {
-          const start2 = Date.now();
-          await axios.get('http://localhost:5010', { timeout: 2000 });
-          engineLatency = Date.now() - start2;
-        } catch (e2: any) {
-          if (e2.response) {
-            engineLatency = Date.now() - (e2.config?.metadata?.startTime || Date.now() - 5);
-          } else {
-            engineStatus = 'OFFLINE';
-          }
-        }
-      }
+    } catch (e) {
+      engineStatus = 'OFFLINE';
     }
 
     return [
