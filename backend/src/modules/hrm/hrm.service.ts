@@ -112,12 +112,13 @@ export class HrmService {
 
     // 1. IP White-listing Check (Anti-Fraud)
     // Query corporate white-listed IP configs
-    const whitelistConfigs = await this.prisma.systemConfig.findMany({
+    const whitelistConfigs = await this.prisma.systemSetting.findMany({
       where: { key: { in: ['office_ip_whitelist', 'office_ip_enabled'] } },
     });
 
     const isEnabled = whitelistConfigs.find(c => c.key === 'office_ip_enabled')?.value === 'true';
-    const allowedIps = whitelistConfigs.find(c => c.key === 'office_ip_whitelist')?.value?.split(',').map(ip => ip.trim()) || [];
+    const whitelistVal = whitelistConfigs.find(c => c.key === 'office_ip_whitelist')?.value;
+    const allowedIps = typeof whitelistVal === 'string' ? whitelistVal.split(',').map(ip => ip.trim()) : [];
 
     if (isEnabled && allowedIps.length > 0 && !allowedIps.includes(ipAddress)) {
       throw new ForbiddenException(`Access Blocked: IP Address ${ipAddress} is not registered in corporate white-listing!`);
