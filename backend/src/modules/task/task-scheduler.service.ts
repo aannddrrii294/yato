@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,8 +8,8 @@ export class TaskSchedulerService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Run scheduler every hour to check and generate repeating tasks
-  @Cron(CronExpression.EVERY_HOUR)
+  // Run scheduler every 10 minutes to check precision scheduling
+  @Cron('*/10 * * * *')
   async handleRepeatingTasks() {
     this.logger.log('⏰ Running repeating task scheduler check...');
     try {
@@ -24,19 +24,36 @@ export class TaskSchedulerService {
       this.logger.log(`Found ${templates.length} active repeating blueprints/templates.`);
 
       const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      // Normalize current day of week (1 = Monday, 7 = Sunday)
+      const jsDay = now.getDay();
+      const currentDayOfWeek = jsDay === 0 ? 7 : jsDay;
+      const currentDayOfMonth = now.getDate();
 
       for (const template of templates) {
         let shouldGenerate = false;
         const lastGen = template.lastGeneratedAt ? new Date(template.lastGeneratedAt) : null;
 
-        if (!lastGen) {
-          shouldGenerate = true;
-        } else {
-          const diffTime = Math.abs(now.getTime() - lastGen.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // 1. Parse target time (e.g. "09:00" -> hour: 9, minute: 0)
+        const targetTime = template.repeatTime || '00:00';
+        const [tHourStr, tMinStr] = targetTime.split(':');
+        const targetHour = parseInt(tHourStr, 10) || 0;
+        const targetMin = parseInt(tMinStr, 10) || 0;
 
-          if (template.repeatInterval === 'DAILY') {
-            // Check if it's a different calendar day
+        // Check if we've reached or passed the scheduled time today
+        const isTimeReached = (currentHour * 60 + currentMinute) >= (targetHour * 60 + targetMin);
+
+        if (!isTimeReached) {
+          continue; // It's too early today for this template, skip it
+        }
+
+        // 2. Perform schedule-type validation
+        if (template.repeatInterval === 'DAILY') {
+          if (!lastGen) {
+            shouldGenerate = true;
+          } else {
             const isSameDay =
               now.getFullYear() === lastGen.getFullYear() &&
               now.getMonth() === lastGen.getMonth() &&
@@ -44,25 +61,54 @@ export class TaskSchedulerService {
             if (!isSameDay) {
               shouldGenerate = true;
             }
-          } else if (template.repeatInterval === 'WEEKLY') {
-            // At least 7 days passed or calendar week changed
-            if (diffDays >= 7) {
+          }
+        } else if (template.repeatInterval === 'WEEKLY') {
+          const targetDayOfWeek = template.repeatDayOfWeek !== null && template.repeatDayOfWeek !== undefined
+            ? Number(template.repeatDayOfWeek)
+            : 1; // Default to Monday (1)
+          
+          if (currentDayOfWeek === targetDayOfWeek) {
+            if (!lastGen) {
               shouldGenerate = true;
+            } else {
+              const diffTime = Math.abs(now.getTime() - lastGen.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const isSameDay =
+                now.getFullYear() === lastGen.getFullYear() &&
+                now.getMonth() === lastGen.getMonth() &&
+                now.getDate() === lastGen.getDate();
+              
+              if (!isSameDay && diffDays >= 6) {
+                shouldGenerate = true;
+              }
             }
-          } else if (template.repeatInterval === 'MONTHLY') {
-            // At least 28-31 days passed or calendar month changed
-            const isSameMonth =
-              now.getFullYear() === lastGen.getFullYear() &&
-              now.getMonth() === lastGen.getMonth();
-            if (!isSameMonth && diffDays >= 28) {
+          }
+        } else if (template.repeatInterval === 'MONTHLY') {
+          const targetDayOfMonth = template.repeatDayOfMonth !== null && template.repeatDayOfMonth !== undefined
+            ? Number(template.repeatDayOfMonth)
+            : 1; // Default to 1st of the month
+          
+          if (currentDayOfMonth === targetDayOfMonth) {
+            if (!lastGen) {
               shouldGenerate = true;
+            } else {
+              const diffTime = Math.abs(now.getTime() - lastGen.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const isSameDay =
+                now.getFullYear() === lastGen.getFullYear() &&
+                now.getMonth() === lastGen.getMonth() &&
+                now.getDate() === lastGen.getDate();
+              
+              if (!isSameDay && diffDays >= 25) {
+                shouldGenerate = true;
+              }
             }
           }
         }
 
         if (shouldGenerate) {
           this.logger.log(
-            `Generating automated task from template "${template.templateName}" (Interval: ${template.repeatInterval})`
+            `Generating automated task from template "${template.templateName}" (Interval: ${template.repeatInterval}, Scheduled Time: ${targetTime})`
           );
 
           // Create the Task

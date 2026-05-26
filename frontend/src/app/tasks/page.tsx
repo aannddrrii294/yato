@@ -83,7 +83,10 @@ export default function TasksPage() {
     priority: "MEDIUM",
     taskType: "TASK",
     checklist: [] as any[],
-    repeatInterval: "NONE"
+    repeatInterval: "NONE",
+    repeatTime: "09:00",
+    repeatDayOfWeek: 1,
+    repeatDayOfMonth: 1
   });
 
   // State for Create Modal
@@ -396,7 +399,10 @@ export default function TasksPage() {
       priority: "MEDIUM",
       taskType: "TASK",
       checklist: [],
-      repeatInterval: "NONE"
+      repeatInterval: "NONE",
+      repeatTime: "09:00",
+      repeatDayOfWeek: 1,
+      repeatDayOfMonth: 1
     });
     setIsTemplateEditorOpen(true);
   };
@@ -410,7 +416,10 @@ export default function TasksPage() {
       priority: template.priority || "MEDIUM",
       taskType: template.taskType || "TASK",
       checklist: template.checklist || [],
-      repeatInterval: template.repeatInterval || "NONE"
+      repeatInterval: template.repeatInterval || "NONE",
+      repeatTime: template.repeatTime || "09:00",
+      repeatDayOfWeek: template.repeatDayOfWeek !== null && template.repeatDayOfWeek !== undefined ? template.repeatDayOfWeek : 1,
+      repeatDayOfMonth: template.repeatDayOfMonth !== null && template.repeatDayOfMonth !== undefined ? template.repeatDayOfMonth : 1
     });
     setIsTemplateEditorOpen(true);
   };
@@ -1260,6 +1269,71 @@ export default function TasksPage() {
                       className="input-field w-full min-h-[80px] bg-white resize-none font-medium"
                     />
                   </div>
+
+                  {/* Scheduled Repeat Details */}
+                  {templateForm.repeatInterval !== "NONE" && (
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 space-y-3">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Precision Scheduling Settings</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3.5">
+                        {/* If Weekly, show Day of Week Select */}
+                        {templateForm.repeatInterval === "WEEKLY" && (
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Repeat Day of Week</label>
+                            <div className="relative">
+                              <select
+                                value={templateForm.repeatDayOfWeek || 1}
+                                onChange={(e) => setTemplateForm(prev => ({ ...prev, repeatDayOfWeek: Number(e.target.value) }))}
+                                className="input-field pr-10 w-full appearance-none bg-white !py-1.5 text-xs font-bold cursor-pointer"
+                              >
+                                <option value={1}>Monday</option>
+                                <option value={2}>Tuesday</option>
+                                <option value={3}>Wednesday</option>
+                                <option value={4}>Thursday</option>
+                                <option value={5}>Friday</option>
+                                <option value={6}>Saturday</option>
+                                <option value={7}>Sunday</option>
+                              </select>
+                              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* If Monthly, show Day of Month Input */}
+                        {templateForm.repeatInterval === "MONTHLY" && (
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Repeat Day of Month</label>
+                            <div className="relative">
+                              <select
+                                value={templateForm.repeatDayOfMonth || 1}
+                                onChange={(e) => setTemplateForm(prev => ({ ...prev, repeatDayOfMonth: Number(e.target.value) }))}
+                                className="input-field pr-10 w-full appearance-none bg-white !py-1.5 text-xs font-bold cursor-pointer"
+                              >
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                  <option key={day} value={day}>{day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of month</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Repeat Time Input */}
+                        <div className="space-y-1 col-span-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Target Repeat Time</label>
+                          <input 
+                            type="time"
+                            value={templateForm.repeatTime || "09:00"}
+                            onChange={(e) => setTemplateForm(prev => ({ ...prev, repeatTime: e.target.value }))}
+                            className="input-field w-full bg-white !py-1 text-xs font-bold text-center"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">

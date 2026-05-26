@@ -593,6 +593,9 @@ export class TaskService {
         taskType: dto.taskType || 'TASK',
         checklist: dto.checklist || [],
         repeatInterval: dto.repeatInterval || 'NONE',
+        repeatTime: dto.repeatTime || null,
+        repeatDayOfWeek: dto.repeatDayOfWeek !== undefined ? Number(dto.repeatDayOfWeek) : null,
+        repeatDayOfMonth: dto.repeatDayOfMonth !== undefined ? Number(dto.repeatDayOfMonth) : null,
         createdById: creatorId,
       },
     });
@@ -609,6 +612,9 @@ export class TaskService {
     if (dto.taskType !== undefined) data.taskType = dto.taskType;
     if (dto.checklist !== undefined) data.checklist = dto.checklist;
     if (dto.repeatInterval !== undefined) data.repeatInterval = dto.repeatInterval;
+    if (dto.repeatTime !== undefined) data.repeatTime = dto.repeatTime;
+    if (dto.repeatDayOfWeek !== undefined) data.repeatDayOfWeek = dto.repeatDayOfWeek !== null ? Number(dto.repeatDayOfWeek) : null;
+    if (dto.repeatDayOfMonth !== undefined) data.repeatDayOfMonth = dto.repeatDayOfMonth !== null ? Number(dto.repeatDayOfMonth) : null;
 
     return this.prisma.taskTemplate.update({
       where: { id },

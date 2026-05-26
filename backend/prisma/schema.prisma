@@ -436,21 +436,24 @@ model TaskComment {
 }
 
 model TaskTemplate {
-  id             String   @id @default(uuid())
-  templateName   String   // The custom name of the template (e.g. "Monitoring Activity")
-  title          String   // Default title of tasks created from this template
-  description    String?
-  priority       String   @default("MEDIUM")      // LOW, MEDIUM, HIGH
-  taskType       String   @default("TASK")        // TASK, TROUBLESHOOT, UPDATE, BACKUP
-  checklist      Json?    // Subtask items stored as JSON: [{ id, text, isDone }]
-  repeatInterval String?  // NONE, DAILY, WEEKLY, MONTHLY
+  id              String    @id @default(uuid())
+  templateName    String    // The custom name of the template (e.g. "Monitoring Activity")
+  title           String    // Default title of tasks created from this template
+  description     String?
+  priority        String    @default("MEDIUM")      // LOW, MEDIUM, HIGH
+  taskType        String    @default("TASK")        // TASK, TROUBLESHOOT, UPDATE, BACKUP
+  checklist       Json?     // Subtask items stored as JSON: [{ id, text, isDone }]
+  repeatInterval  String?   // NONE, DAILY, WEEKLY, MONTHLY
+  repeatTime      String?   // e.g. "09:00"
+  repeatDayOfWeek Int?      // e.g. 1-7 (Monday-Sunday)
+  repeatDayOfMonth Int?     // e.g. 1-31
   lastGeneratedAt DateTime?
 
-  createdById    String
-  createdBy      User     @relation("UserCreatedTemplates", fields: [createdById], references: [id])
+  createdById     String
+  createdBy       User      @relation("UserCreatedTemplates", fields: [createdById], references: [id])
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model StorageFile {

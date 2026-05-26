@@ -140,6 +140,16 @@ export class CreateTaskTemplateDto {
   @IsString()
   @IsOptional()
   repeatInterval?: string;
+
+  @IsString()
+  @IsOptional()
+  repeatTime?: string;
+
+  @IsOptional()
+  repeatDayOfWeek?: number;
+
+  @IsOptional()
+  repeatDayOfMonth?: number;
 }
 
 export class UpdateTaskTemplateDto {
@@ -169,4 +179,14 @@ export class UpdateTaskTemplateDto {
   @IsString()
   @IsOptional()
   repeatInterval?: string;
+
+  @IsString()
+  @IsOptional()
+  repeatTime?: string;
+
+  @IsOptional()
+  repeatDayOfWeek?: number;
+
+  @IsOptional()
+  repeatDayOfMonth?: number;
 }
