@@ -22,7 +22,8 @@ import {
   FileCode,
   CheckCircle,
   HelpCircle,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
