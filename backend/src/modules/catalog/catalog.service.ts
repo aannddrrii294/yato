@@ -16,6 +16,19 @@ export class CatalogService {
     return this.prisma.catalog.create({ data });
   }
 
+  async update(id: string, data: any) {
+    return this.prisma.catalog.update({
+      where: { id },
+      data: {
+        name: data.name,
+        value: data.value,
+        description: data.description,
+        metadata: data.metadata,
+        category: data.category,
+      },
+    });
+  }
+
   async remove(id: string) {
     return this.prisma.catalog.update({
       where: { id },

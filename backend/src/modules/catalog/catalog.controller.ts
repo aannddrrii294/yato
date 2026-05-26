@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -23,6 +23,14 @@ export class CatalogController {
   @ApiOperation({ summary: 'Add a new catalog item' })
   create(@Body() data: any) {
     return this.catalogService.create(data);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({ summary: 'Update an existing catalog item' })
+  update(@Param('id') id: string, @Body() data: any) {
+    return this.catalogService.update(id, data);
   }
 
   @Delete(':id')

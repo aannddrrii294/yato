@@ -35,7 +35,8 @@ import {
   CheckSquare,
   LifeBuoy,
   Key,
-  Cpu
+  Cpu,
+  Edit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -323,6 +324,19 @@ export default function SystemConfigPage() {
     value: "",
     metadata: { customFields: [] }
   });
+  const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
+
+  const handleOpenEditCatalog = (item: any) => {
+    setNewCatalog({
+      category: item.category,
+      name: item.name,
+      value: item.value,
+      description: item.description || "",
+      metadata: item.metadata || { customFields: [] }
+    });
+    setEditingCatalogId(item.id);
+    setIsAddCatalogModalOpen(true);
+  };
 
   const fetchCatalogs = async () => {
     try {
@@ -379,8 +393,13 @@ export default function SystemConfigPage() {
   const handleAddCatalog = async () => {
     if (!newCatalog.name || !newCatalog.value) return;
     try {
-      await api.post("/catalog", newCatalog);
+      if (editingCatalogId) {
+        await api.put(`/catalog/${editingCatalogId}`, newCatalog);
+      } else {
+        await api.post("/catalog", newCatalog);
+      }
       setNewCatalog({ category: "SERVICE_TYPE", name: "", value: "", description: "", metadata: { customFields: [] } });
+      setEditingCatalogId(null);
       setIsAddCatalogModalOpen(false);
       fetchCatalogs();
     } catch (e: any) { console.error(e); }
@@ -390,7 +409,7 @@ export default function SystemConfigPage() {
     const fields = newCatalog.metadata?.customFields || [];
     setNewCatalog({
       ...newCatalog,
-      metadata: { customFields: [...fields, { name: "", isRequired: false }] }
+      metadata: { customFields: [...fields, { name: "", type: "text", isRequired: false }] }
     });
   };
 
@@ -1568,12 +1587,22 @@ export default function SystemConfigPage() {
                         <span className="text-xs font-bold text-slate-900">{item.name}</span>
                         <code className="text-[9px] text-slate-400 font-mono mt-0.5">{item.value}</code>
                       </div>
-                      <button 
-                        onClick={() => handleRemoveCatalog(item.id)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                        <button 
+                          onClick={() => handleOpenEditCatalog(item)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveCatalog(item.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1595,12 +1624,22 @@ export default function SystemConfigPage() {
                         <span className="text-xs font-bold text-slate-900">{item.name}</span>
                         <code className="text-[9px] text-slate-400 font-mono mt-0.5">{item.value}</code>
                       </div>
-                      <button 
-                        onClick={() => handleRemoveCatalog(item.id)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                        <button 
+                          onClick={() => handleOpenEditCatalog(item)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveCatalog(item.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1622,12 +1661,22 @@ export default function SystemConfigPage() {
                         <span className="text-xs font-bold text-slate-900">{item.name}</span>
                         <code className="text-[9px] text-slate-400 font-mono mt-0.5">{item.value}</code>
                       </div>
-                      <button 
-                        onClick={() => handleRemoveCatalog(item.id)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                        <button 
+                          onClick={() => handleOpenEditCatalog(item)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveCatalog(item.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1649,12 +1698,22 @@ export default function SystemConfigPage() {
                       <span className="text-xs font-bold text-slate-900">{item.name}</span>
                       <code className="text-[9px] text-slate-400 font-mono mt-0.5">{item.value}</code>
                     </div>
-                    <button 
-                      onClick={() => handleRemoveCatalog(item.id)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                      <button 
+                        onClick={() => handleOpenEditCatalog(item)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Edit"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveCatalog(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1679,12 +1738,22 @@ export default function SystemConfigPage() {
                         <span className="text-[10px] text-slate-500 font-medium mt-1 leading-normal">{item.description}</span>
                       )}
                     </div>
-                    <button 
-                      onClick={() => handleRemoveCatalog(item.id)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                      <button 
+                        onClick={() => handleOpenEditCatalog(item)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Edit"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveCatalog(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1709,12 +1778,22 @@ export default function SystemConfigPage() {
                         <span className="text-[10px] text-slate-500 font-medium mt-1 leading-normal">{item.description}</span>
                       )}
                     </div>
-                    <button 
-                      onClick={() => handleRemoveCatalog(item.id)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                      <button 
+                        onClick={() => handleOpenEditCatalog(item)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Edit"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveCatalog(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2348,31 +2427,48 @@ export default function SystemConfigPage() {
                       </p>
                     )}
 
-                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3.5 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                       {newCatalog.metadata?.customFields?.map((field: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                          <input 
-                            type="text"
-                            placeholder="Field Name (e.g. Port)"
-                            className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold outline-none focus:border-blue-500"
-                            value={field.name}
-                            onChange={(e) => handleUpdateCustomField(idx, 'name', e.target.value)}
-                          />
-                          <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-slate-200 shrink-0">
+                        <div key={idx} className="flex flex-col gap-2.5 bg-slate-50/60 p-3 rounded-2xl border border-slate-100/80 shadow-sm">
+                          <div className="flex items-center gap-2">
                             <input 
-                              type="checkbox" 
-                              className="accent-blue-600"
-                              checked={field.isRequired}
-                              onChange={(e) => handleUpdateCustomField(idx, 'isRequired', e.target.checked)}
+                              type="text"
+                              placeholder="Field Name (e.g. Purchase Date)"
+                              className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:border-blue-500 shadow-sm"
+                              value={field.name}
+                              onChange={(e) => handleUpdateCustomField(idx, 'name', e.target.value)}
                             />
-                            <span className="text-[10px] font-bold text-slate-600 uppercase">Required</span>
-                          </label>
-                          <button 
-                            onClick={() => handleRemoveCustomField(idx)}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                            <select
+                              value={field.type || "text"}
+                              onChange={(e) => handleUpdateCustomField(idx, 'type', e.target.value)}
+                              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:border-blue-500 cursor-pointer shadow-sm text-slate-700 font-sans"
+                            >
+                              <option value="text">TEXT</option>
+                              <option value="number">NUMBER</option>
+                              <option value="datetime">DATE & TIME</option>
+                              <option value="boolean">BOOLEAN / TOGGLE</option>
+                              <option value="password">SECURED SECRET</option>
+                            </select>
+                          </div>
+                          
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-100/40">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                className="accent-blue-600 rounded"
+                                checked={field.isRequired}
+                                onChange={(e) => handleUpdateCustomField(idx, 'isRequired', e.target.checked)}
+                              />
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Required Field</span>
+                            </label>
+                            
+                            <button 
+                              onClick={() => handleRemoveCustomField(idx)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
