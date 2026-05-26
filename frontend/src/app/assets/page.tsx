@@ -416,8 +416,11 @@ export default function AssetsPage() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Asset Name</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Assets Type</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Assets Name</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Description</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Owner</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Notes</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Status</th>
                     <th className="px-6 py-4 text-right"></th>
                   </tr>
@@ -426,12 +429,12 @@ export default function AssetsPage() {
                   {isLoading ? (
                     [...Array(3)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td colSpan={5} className="px-6 py-8 h-20 bg-slate-50/10"></td>
+                        <td colSpan={8} className="px-6 py-8 h-20 bg-slate-50/10"></td>
                       </tr>
                     ))
                   ) : paginatedAssets.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center text-slate-400 font-medium">
+                      <td colSpan={8} className="px-6 py-20 text-center text-slate-400 font-medium">
                         No physical assets found in registry.
                       </td>
                     </tr>
@@ -439,26 +442,31 @@ export default function AssetsPage() {
                     <tr key={asset.id} className="hover:bg-slate-50/30 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                          <button 
-                            onClick={() => setQrZoomAsset(asset)}
-                            className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-700 hover:bg-slate-100 transition-all shadow-sm group relative"
-                            title="Show QR Code"
-                          >
-                            <QrCode className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          </button>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-900 text-[14px]">{asset.assetCode}</span>
-                              <span className="text-[9px] font-extrabold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                {asset.assetType}
-                              </span>
-                            </div>
-                          </div>
+                           <button 
+                             onClick={() => setQrZoomAsset(asset)}
+                             className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-700 hover:bg-slate-100 transition-all shadow-sm group relative"
+                             title="Show QR Code"
+                           >
+                             <QrCode className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                           </button>
+                           <span className="font-bold text-slate-900 text-[13px]">{asset.assetCode}</span>
                         </div>
                       </td>
 
                       <td className="px-6 py-5">
+                        <span className="text-[9px] font-extrabold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md uppercase tracking-wider">
+                          {asset.assetType}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-5">
                         <span className="text-[13px] font-bold text-slate-700">{asset.hostname || 'UNASSIGNED_NAME'}</span>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <p className="text-[12px] text-slate-500 max-w-[200px] truncate font-medium" title={asset.metadata?.description}>
+                          {asset.metadata?.description || '-'}
+                        </p>
                       </td>
 
                       <td className="px-6 py-5">
@@ -475,7 +483,11 @@ export default function AssetsPage() {
                         </div>
                       </td>
 
-
+                      <td className="px-6 py-5">
+                        <p className="text-[12px] text-slate-500 max-w-[200px] truncate font-medium" title={asset.metadata?.notes}>
+                          {asset.metadata?.notes || '-'}
+                        </p>
+                      </td>
 
                       <td className="px-6 py-5 text-center">
                         <span className={cn(
