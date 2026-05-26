@@ -98,8 +98,7 @@
   "overrides": {
     "braces": "^3.0.3",
     "micromatch": "^4.0.8",
-    "ws": "^8.17.1",
-    "path-to-regexp": "^0.1.10"
+    "ws": "^8.17.1"
   },
   "jest": {
     "moduleFileExtensions": [
