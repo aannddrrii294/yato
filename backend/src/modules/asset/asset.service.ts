@@ -172,6 +172,7 @@ export class AssetService {
       const updatedAsset = await tx.asset.update({
         where: { id },
         data: {
+          assetType: dto.assetType ? dto.assetType.toUpperCase() : undefined,
           hostname: dto.hostname,
           serialNumber: dto.serialNumber,
           status: dto.status,

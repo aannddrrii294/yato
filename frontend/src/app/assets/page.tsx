@@ -687,7 +687,6 @@ export default function AssetsPage() {
                       </label>
                       <select 
                         required
-                        disabled={isEditOpen}
                         className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl appearance-none font-bold"
                         value={formData.assetType}
                         onChange={(e) => setFormData({...formData, assetType: e.target.value, metadata: {}})}
