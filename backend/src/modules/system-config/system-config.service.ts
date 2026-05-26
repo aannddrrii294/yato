@@ -145,7 +145,9 @@ export class SystemConfigService {
   }
 
   async getSystemStatus() {
-    // 1. Database & Audit Service Check (Physical Check)
+    const axios = require('axios');
+
+    // 1. Database Check (yato-postgres)
     let dbStatus = 'OPERATIONAL';
     let dbLatency = 0;
     try {
@@ -153,21 +155,62 @@ export class SystemConfigService {
       await this.prisma.$queryRaw`SELECT 1`;
       dbLatency = Date.now() - dbStart;
     } catch (e) {
-      dbStatus = 'DEGRADED';
+      dbStatus = 'OFFLINE';
     }
 
-    // 2. Identity Vault (Encryption Check)
-    // In a real scenario, we might try to decrypt a test string
-    const vaultStatus = 'SECURE';
-    const vaultLatency = Math.floor(Math.random() * 4) + 1;
+    // 2. Identity Vault (Encryption Key Check)
+    let vaultStatus = 'SECURE';
+    let vaultLatency = 1;
+    try {
+      const start = Date.now();
+      const hasKey = !!process.env.ENCRYPTION_KEY;
+      if (!hasKey) throw new Error('No encryption key');
+      vaultLatency = Date.now() - start;
+    } catch (e) {
+      vaultStatus = 'OFFLINE';
+    }
 
-    // 3. Notification Relay (Simulation of event bus health)
-    const notifyStatus = 'HEALTHY';
-    const notifyLatency = Math.floor(Math.random() * 10) + 5;
+    // 3. Notification Relay (WAHA WhatsApp Gateway Check)
+    let notifyStatus = 'HEALTHY';
+    let notifyLatency = 0;
+    try {
+      const start = Date.now();
+      const wahaUrl = process.env.WAHA_URL || 'http://waha:3000';
+      await axios.get(wahaUrl, { timeout: 2000 });
+      notifyLatency = Date.now() - start;
+    } catch (e: any) {
+      if (e.response) {
+        notifyLatency = Date.now() - (e.config?.metadata?.startTime || Date.now() - 5); // Approximate if response received
+      } else {
+        notifyStatus = 'OFFLINE';
+      }
+    }
 
-    // 4. Provisioning Engine (Simulation of SSH/Gateway availability)
-    const engineStatus = 'HEALTHY';
-    const engineLatency = Math.floor(Math.random() * 12) + 3;
+    // 4. Provisioning Engine (Proxmox Plugin Check)
+    let engineStatus = 'HEALTHY';
+    let engineLatency = 0;
+    try {
+      const start = Date.now();
+      await axios.get('http://yato-plugin-proxmox:5001', { timeout: 2000 });
+      engineLatency = Date.now() - start;
+    } catch (e: any) {
+      if (e.response) {
+        engineLatency = Date.now() - (e.config?.metadata?.startTime || Date.now() - 5);
+      } else {
+        // Try fallback on localhost
+        try {
+          const start2 = Date.now();
+          await axios.get('http://localhost:5010', { timeout: 2000 });
+          engineLatency = Date.now() - start2;
+        } catch (e2: any) {
+          if (e2.response) {
+            engineLatency = Date.now() - (e2.config?.metadata?.startTime || Date.now() - 5);
+          } else {
+            engineStatus = 'OFFLINE';
+          }
+        }
+      }
+    }
 
     return [
       {
