@@ -444,6 +444,7 @@ model TaskTemplate {
   taskType       String   @default("TASK")        // TASK, TROUBLESHOOT, UPDATE, BACKUP
   checklist      Json?    // Subtask items stored as JSON: [{ id, text, isDone }]
   repeatInterval String?  // NONE, DAILY, WEEKLY, MONTHLY
+  lastGeneratedAt DateTime?
 
   createdById    String
   createdBy      User     @relation("UserCreatedTemplates", fields: [createdById], references: [id])

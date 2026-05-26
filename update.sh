@@ -74,6 +74,17 @@ if [ -z "$SERVER_IP" ]; then
 fi
 export API_URL="http://$SERVER_IP:4000"
 
+# Step 1.9: Synchronize host dependencies if npm is available
+if command -v npm &> /dev/null; then
+  echo -e "${YELLOW}📦 Synchronizing host development dependencies...${NC}"
+  echo -e "   • Installing backend dependencies on host..."
+  (cd backend && npm install) || echo -e "${RED}Warning: backend npm install on host failed, continuing...${NC}"
+  echo -e "   • Installing frontend dependencies on host..."
+  (cd frontend && npm install) || echo -e "${RED}Warning: frontend npm install on host failed, continuing...${NC}"
+else
+  echo "   • npm not available on host, skipping host-level node_modules sync."
+fi
+
 # Step 2: Rebuild and Restart
 echo -e "${YELLOW}📦 Rebuilding and restarting containers...${NC}"
 $DOCKER_COMPOSE up -d --build

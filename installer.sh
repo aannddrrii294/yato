@@ -104,6 +104,17 @@ if [ "$INFRA_MODE" = "docker" ]; then
     [ "$COMP_APP" = true ] && SERVICES="$SERVICES backend"
     [ "$COMP_WEB" = true ] && SERVICES="$SERVICES frontend nginx"
     
+    # Synchronize host development dependencies if npm is available
+    if command -v npm &> /dev/null; then
+      echo -e "${YELLOW}📦 Synchronizing host development dependencies...${NC}"
+      echo -e "   • Installing backend dependencies on host..."
+      (cd backend && npm install) || echo -e "${RED}Warning: backend npm install failed, continuing...${NC}"
+      echo -e "   • Installing frontend dependencies on host..."
+      (cd frontend && npm install) || echo -e "${RED}Warning: frontend npm install failed, continuing...${NC}"
+    else
+      echo "   • npm not available on host, skipping host-level node_modules sync."
+    fi
+
     $DOCKER_COMPOSE up -d $SERVICES
     
     if [ "$COMP_APP" = true ]; then
