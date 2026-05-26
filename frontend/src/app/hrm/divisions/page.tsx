@@ -149,29 +149,27 @@ export default function DivisionMappingsPage() {
                     {div.description || "No division description added yet."}
                   </p>
 
-                  <div className="space-y-2.5 pt-3">
-                    <div className="flex items-center justify-between text-xs bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-blue-500" />
-                        Supervisor
-                      </span>
-                      <span className="font-bold text-slate-700">{div.supervisor?.fullName || "Not Mapped"}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-amber-500" />
-                        Manager
-                      </span>
-                      <span className="font-bold text-slate-700">{div.manager?.fullName || "Not Mapped"}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-purple-500" />
-                        Department Head
-                      </span>
-                      <span className="font-bold text-slate-700">{div.head?.fullName || "Not Mapped"}</span>
+                  <div className="space-y-3 pt-4 border-t border-slate-100/60 mt-4">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Approval Workflow Chain</span>
+                    
+                    <div className="relative pl-6 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                      <div className="relative flex items-center justify-between text-xs">
+                        <span className="absolute -left-6 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-blue-50 border-2 border-blue-500 flex items-center justify-center text-[9px] font-extrabold text-blue-600">1</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tier 1 Approver</span>
+                        <span className="font-extrabold text-slate-700">{div.supervisor?.fullName || <span className="text-slate-300 font-normal">Skipped</span>}</span>
+                      </div>
+                      
+                      <div className="relative flex items-center justify-between text-xs">
+                        <span className="absolute -left-6 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-amber-50 border-2 border-amber-500 flex items-center justify-center text-[9px] font-extrabold text-amber-600">2</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tier 2 Approver</span>
+                        <span className="font-extrabold text-slate-700">{div.manager?.fullName || <span className="text-slate-300 font-normal">Skipped</span>}</span>
+                      </div>
+                      
+                      <div className="relative flex items-center justify-between text-xs">
+                        <span className="absolute -left-6 top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-purple-50 border-2 border-purple-500 flex items-center justify-center text-[9px] font-extrabold text-purple-600">3</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tier 3 Approver (Final)</span>
+                        <span className="font-extrabold text-slate-700">{div.head?.fullName || <span className="text-slate-300 font-normal">Skipped</span>}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -235,46 +233,63 @@ export default function DivisionMappingsPage() {
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">1. Supervisor Step (SPV)</label>
-                    <select
-                      value={form.supervisorId}
-                      onChange={(e) => setForm(prev => ({ ...prev, supervisorId: e.target.value }))}
-                      className="input-field w-full bg-slate-50 text-xs py-2.5 cursor-pointer border-slate-200"
-                    >
-                      <option value="">-- No Supervisor Assigned --</option>
-                      {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.fullName}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <div className="border-t border-b border-slate-100 py-4 my-2 space-y-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-black text-slate-450 uppercase tracking-widest block">Custom Approval Workflow Chain</span>
+                      <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                        Design a sequential chain of trust. Request flows from Step 1 to Step 3. You can customize or skip levels by leaving them unassigned.
+                      </p>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">2. Manager Step (Manager)</label>
-                    <select
-                      value={form.managerId}
-                      onChange={(e) => setForm(prev => ({ ...prev, managerId: e.target.value }))}
-                      className="input-field w-full bg-slate-50 text-xs py-2.5 cursor-pointer border-slate-200"
-                    >
-                      <option value="">-- No Manager Assigned --</option>
-                      {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.fullName}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-100">
+                      {/* Step 1 */}
+                      <div className="relative space-y-1">
+                        <span className="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-blue-50 border-2 border-blue-500 flex items-center justify-center text-[9px] font-extrabold text-blue-600">1</span>
+                        <label className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Approval Step 1: Initial Verifier (e.g. Supervisor)</label>
+                        <select
+                          value={form.supervisorId}
+                          onChange={(e) => setForm(prev => ({ ...prev, supervisorId: e.target.value }))}
+                          className="input-field w-full bg-slate-50 text-xs py-2 cursor-pointer border-slate-200"
+                        >
+                          <option value="">-- Skip Step 1 (No Supervisor) --</option>
+                          {users.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.fullName}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">3. Department Head Step (Head)</label>
-                    <select
-                      value={form.headId}
-                      onChange={(e) => setForm(prev => ({ ...prev, headId: e.target.value }))}
-                      className="input-field w-full bg-slate-50 text-xs py-2.5 cursor-pointer border-slate-200"
-                    >
-                      <option value="">-- No Head Mapped --</option>
-                      {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.fullName}</option>
-                      ))}
-                    </select>
+                      {/* Step 2 */}
+                      <div className="relative space-y-1">
+                        <span className="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-amber-50 border-2 border-amber-500 flex items-center justify-center text-[9px] font-extrabold text-amber-600">2</span>
+                        <label className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Approval Step 2: Intermediate Approver (e.g. Manager)</label>
+                        <select
+                          value={form.managerId}
+                          onChange={(e) => setForm(prev => ({ ...prev, managerId: e.target.value }))}
+                          className="input-field w-full bg-slate-50 text-xs py-2 cursor-pointer border-slate-200"
+                        >
+                          <option value="">-- Skip Step 2 (No Manager) --</option>
+                          {users.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.fullName}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="relative space-y-1">
+                        <span className="absolute -left-6 top-1.5 w-4 h-4 rounded-full bg-purple-50 border-2 border-purple-500 flex items-center justify-center text-[9px] font-extrabold text-purple-600">3</span>
+                        <label className="text-[9px] font-bold text-slate-450 uppercase tracking-wider block">Approval Step 3: Final Authority (e.g. Department Head)</label>
+                        <select
+                          value={form.headId}
+                          onChange={(e) => setForm(prev => ({ ...prev, headId: e.target.value }))}
+                          className="input-field w-full bg-slate-50 text-xs py-2 cursor-pointer border-slate-200"
+                        >
+                          <option value="">-- Skip Step 3 (No Head Mapped) --</option>
+                          {users.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.fullName}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
