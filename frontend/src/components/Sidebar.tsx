@@ -129,8 +129,16 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "VIEW_DASHBOARD" },
         { icon: Ticket, label: "Support Tickets", href: "/tickets", permission: "VIEW_SUPPORT_TICKETS" },
-        { icon: Coffee, label: "HR & Attendance", href: "/timesheets", permission: "VIEW_HRM" },
         { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
+      ]
+    },
+    {
+      title: "HR Management",
+      items: [
+        { icon: Clock, label: "Attendance Control", href: "/hrm/attendance", permission: "VIEW_HRM" },
+        { icon: CalendarIcon, label: "Calendar Timesheets", href: "/hrm/calendar", permission: "VIEW_HRM" },
+        { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves", permission: "VIEW_HRM" },
+        { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
       ]
     },
     {
