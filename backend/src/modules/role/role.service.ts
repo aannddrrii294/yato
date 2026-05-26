@@ -57,7 +57,9 @@ export class RoleService {
       "VIEW_TASKS",
       "MANAGE_TASKS",
       "VIEW_FILES",
-      "MANAGE_FILES"
+      "MANAGE_FILES",
+      "VIEW_HRM",
+      "MANAGE_HRM"
     ];
   }
 }

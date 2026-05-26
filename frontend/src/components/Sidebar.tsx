@@ -129,7 +129,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
       items: [
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "VIEW_DASHBOARD" },
         { icon: Ticket, label: "Support Tickets", href: "/tickets", permission: "VIEW_SUPPORT_TICKETS" },
-        { icon: Coffee, label: "HR & Attendance", href: "/timesheets" },
+        { icon: Coffee, label: "HR & Attendance", href: "/timesheets", permission: "VIEW_HRM" },
         { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
       ]
     },
