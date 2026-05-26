@@ -12,7 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.32.0",
     "@tanstack/react-query-devtools": "^5.32.0",
-    "axios": "^1.6.8",
+    "axios": "^1.7.4",
     "clsx": "^2.1.1",
     "framer-motion": "^11.1.7",
     "lucide-react": "^0.378.0",
@@ -41,7 +41,6 @@
     "braces": "^3.0.3",
     "micromatch": "^4.0.8",
     "ws": "^8.17.1",
-    "axios": "^1.7.4",
     "path-to-regexp": "^0.1.10"
   }
 }
