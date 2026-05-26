@@ -2,46 +2,46 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nes
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RoleService } from './role.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('roles')
 @Controller('roles')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Get()
-  @Roles('ADMIN')
+  @Permissions('MANAGE_ROLES')
   @ApiOperation({ summary: 'Get all roles' })
   findAll() {
     return this.roleService.findAll();
   }
 
   @Get('permissions')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_ROLES')
   @ApiOperation({ summary: 'Get all available permissions' })
   getPermissions() {
     return this.roleService.getAvailablePermissions();
   }
 
   @Post()
-  @Roles('ADMIN')
+  @Permissions('MANAGE_ROLES')
   @ApiOperation({ summary: 'Create custom role' })
   create(@Body() dto: any) {
     return this.roleService.create(dto);
   }
 
   @Put(':id')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_ROLES')
   @ApiOperation({ summary: 'Update role' })
   update(@Param('id') id: string, @Body() dto: any) {
     return this.roleService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_ROLES')
   @ApiOperation({ summary: 'Delete role' })
   remove(@Param('id') id: string) {
     return this.roleService.delete(id);

@@ -1,11 +1,11 @@
 import { Controller, Get, UseGuards, Patch, Delete, Param, Body } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UserController {
   constructor(private userService: UserService) {}
 
@@ -15,19 +15,19 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_USERS')
   async findOne(@Param('id') id: string) {
     return this.userService.findById(id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_USERS')
   async update(@Param('id') id: string, @Body() data: any) {
     return this.userService.update(id, data);
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Permissions('MANAGE_USERS')
   async remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
