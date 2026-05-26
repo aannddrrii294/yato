@@ -22,7 +22,8 @@ import {
   CheckSquare,
   HardDrive,
   Plug,
-  Coffee
+  Coffee,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
