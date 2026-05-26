@@ -493,22 +493,78 @@ export default function CredentialsPage() {
                   </div>
 
                   {/* Render Dynamic Custom Fields */}
-                  {identityTypes?.find((t: any) => t.value === formData.type)?.metadata?.customFields?.map((field: any, idx: number) => (
-                    <div key={idx} className="space-y-2 col-span-2">
-                      <label>{field.name} {field.isRequired ? "" : <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span>}</label>
-                      <input 
-                        type="text" 
-                        required={field.isRequired}
-                        className="input-field w-full py-2.5 bg-slate-50/50"
-                        placeholder={`Enter ${field.name}`}
-                        value={formData.metadata?.[field.name] || ""}
-                        onChange={e => setFormData({
-                          ...formData,
-                          metadata: { ...(formData.metadata || {}), [field.name]: e.target.value }
-                        })}
-                      />
-                    </div>
-                  ))}
+                  {identityTypes?.find((t: any) => t.value === formData.type)?.metadata?.customFields?.map((field: any, idx: number) => {
+                    const value = formData.metadata?.[field.name];
+                    const isRequired = field.isRequired;
+                    
+                    return (
+                      <div key={idx} className="space-y-2 col-span-2">
+                        <label>{field.name} {isRequired ? "" : <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span>}</label>
+                        
+                        {field.type === "boolean" ? (
+                          <label className="flex items-center gap-2 cursor-pointer bg-slate-50/50 border border-slate-100 rounded-xl px-4 py-3 shadow-sm h-[42px] transition-all hover:bg-slate-100/30">
+                            <input 
+                              type="checkbox" 
+                              className="accent-blue-600 rounded w-4 h-4 cursor-pointer"
+                              checked={!!value}
+                              onChange={e => setFormData({
+                                ...formData,
+                                metadata: { ...(formData.metadata || {}), [field.name]: e.target.checked }
+                              })}
+                            />
+                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Yes / Enabled</span>
+                          </label>
+                        ) : field.type === "datetime" ? (
+                          <input 
+                            type="datetime-local" 
+                            required={isRequired}
+                            className="input-field w-full py-2.5 bg-slate-50/50"
+                            value={value || ""}
+                            onChange={e => setFormData({
+                              ...formData,
+                              metadata: { ...(formData.metadata || {}), [field.name]: e.target.value }
+                            })}
+                          />
+                        ) : field.type === "number" ? (
+                          <input 
+                            type="number" 
+                            required={isRequired}
+                            className="input-field w-full py-2.5 bg-slate-50/50"
+                            placeholder={`Enter ${field.name}`}
+                            value={value || ""}
+                            onChange={e => setFormData({
+                              ...formData,
+                              metadata: { ...(formData.metadata || {}), [field.name]: parseFloat(e.target.value) || e.target.value }
+                            })}
+                          />
+                        ) : field.type === "password" ? (
+                          <input 
+                            type="password" 
+                            required={isRequired}
+                            className="input-field w-full py-2.5 bg-slate-50/50 font-mono"
+                            placeholder={`Enter ${field.name}`}
+                            value={value || ""}
+                            onChange={e => setFormData({
+                              ...formData,
+                              metadata: { ...(formData.metadata || {}), [field.name]: e.target.value }
+                            })}
+                          />
+                        ) : (
+                          <input 
+                            type="text" 
+                            required={isRequired}
+                            className="input-field w-full py-2.5 bg-slate-50/50"
+                            placeholder={`Enter ${field.name}`}
+                            value={value || ""}
+                            onChange={e => setFormData({
+                              ...formData,
+                              metadata: { ...(formData.metadata || {}), [field.name]: e.target.value }
+                            })}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                   <div className="space-y-2 col-span-2">
                     <label>Description / Notes</label>

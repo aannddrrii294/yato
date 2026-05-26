@@ -790,29 +790,105 @@ export default function AssetsPage() {
                             <Plus className="w-3.5 h-3.5" /> {selectedTypeObj?.name} Properties
                           </p>
                           <div className="grid grid-cols-2 gap-4">
-                            {customFields.map((field: any) => (
-                              <div key={field.name} className="space-y-2">
-                                <label className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                                  {field.name} {field.isRequired && <span className="text-red-500 font-extrabold">*</span>}
-                                </label>
-                                <input 
-                                  type="text"
-                                  required={field.isRequired}
-                                  className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-xs font-semibold"
-                                  placeholder={`Enter ${field.name}...`}
-                                  value={formData.metadata?.[field.name] || ""}
-                                  onChange={(e) => {
-                                    setFormData({
-                                      ...formData,
-                                      metadata: {
-                                        ...formData.metadata,
-                                        [field.name]: e.target.value
-                                      }
-                                    });
-                                  }}
-                                />
-                              </div>
-                            ))}
+                            {customFields.map((field: any) => {
+                              const value = formData.metadata?.[field.name];
+                              const isRequired = field.isRequired;
+                              
+                              return (
+                                <div key={field.name} className="space-y-2">
+                                  <label className="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                    {field.name} {isRequired && <span className="text-red-500 font-extrabold">*</span>}
+                                  </label>
+                                  
+                                  {field.type === "boolean" ? (
+                                    <label className="flex items-center gap-2 cursor-pointer bg-slate-50/50 border border-slate-100 rounded-xl px-4 py-3 shadow-sm h-[42px] transition-all hover:bg-slate-100/30">
+                                      <input 
+                                        type="checkbox"
+                                        className="accent-blue-600 rounded w-4 h-4 cursor-pointer"
+                                        checked={!!value}
+                                        onChange={e => {
+                                          setFormData({
+                                            ...formData,
+                                            metadata: {
+                                              ...formData.metadata,
+                                              [field.name]: e.target.checked
+                                            }
+                                          });
+                                        }}
+                                      />
+                                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Yes / Enabled</span>
+                                    </label>
+                                  ) : field.type === "datetime" ? (
+                                    <input 
+                                      type="datetime-local"
+                                      required={isRequired}
+                                      className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-xs font-semibold focus:border-blue-500 transition-all outline-none"
+                                      value={value || ""}
+                                      onChange={e => {
+                                        setFormData({
+                                          ...formData,
+                                          metadata: {
+                                            ...formData.metadata,
+                                            [field.name]: e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  ) : field.type === "number" ? (
+                                    <input 
+                                      type="number"
+                                      required={isRequired}
+                                      className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-xs font-semibold focus:border-blue-500 transition-all outline-none"
+                                      placeholder={`Enter ${field.name}...`}
+                                      value={value || ""}
+                                      onChange={e => {
+                                        setFormData({
+                                          ...formData,
+                                          metadata: {
+                                            ...formData.metadata,
+                                            [field.name]: parseFloat(e.target.value) || e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  ) : field.type === "password" ? (
+                                    <input 
+                                      type="password"
+                                      required={isRequired}
+                                      className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-xs font-semibold focus:border-blue-500 transition-all outline-none font-mono"
+                                      placeholder={`Enter ${field.name}...`}
+                                      value={value || ""}
+                                      onChange={e => {
+                                        setFormData({
+                                          ...formData,
+                                          metadata: {
+                                            ...formData.metadata,
+                                            [field.name]: e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  ) : (
+                                    <input 
+                                      type="text"
+                                      required={isRequired}
+                                      className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl px-4 text-xs font-semibold focus:border-blue-500 transition-all outline-none"
+                                      placeholder={`Enter ${field.name}...`}
+                                      value={value || ""}
+                                      onChange={e => {
+                                        setFormData({
+                                          ...formData,
+                                          metadata: {
+                                            ...formData.metadata,
+                                            [field.name]: e.target.value
+                                          }
+                                        });
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
