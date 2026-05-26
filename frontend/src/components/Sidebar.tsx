@@ -23,7 +23,13 @@ import {
   HardDrive,
   Plug,
   Coffee,
-  Loader2
+  Loader2,
+  Clock,
+  Calendar,
+  ArrowLeftRight,
+  Shield,
+  Coins,
+  Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -136,9 +142,18 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
       title: "HR Management",
       items: [
         { icon: Clock, label: "Attendance Control", href: "/hrm/attendance", permission: "VIEW_HRM" },
-        { icon: CalendarIcon, label: "Calendar Timesheets", href: "/hrm/calendar", permission: "VIEW_HRM" },
+        { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar", permission: "VIEW_HRM" },
         { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves", permission: "VIEW_HRM" },
         { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
+      ]
+    },
+    {
+      title: "HR Administration",
+      items: [
+        { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_USERS" },
+        { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_USERS" },
+        { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_USERS" },
+        { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_USERS" },
       ]
     },
     {
