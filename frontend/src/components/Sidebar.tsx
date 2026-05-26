@@ -150,10 +150,10 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
     {
       title: "HR Administration",
       items: [
-        { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_USERS" },
-        { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_USERS" },
-        { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_USERS" },
-        { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_USERS" },
+        { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM" },
+        { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_HRM" },
+        { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_HRM" },
+        { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_HRM" },
       ]
     },
     {

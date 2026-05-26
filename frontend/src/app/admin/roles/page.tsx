@@ -334,6 +334,10 @@ export default function RolesManagementPage() {
                           perms: ["VIEW_FILES", "MANAGE_FILES"] 
                         },
                         { 
+                          group: "Human Resource Management", 
+                          perms: ["VIEW_HRM", "MANAGE_HRM"] 
+                        },
+                        { 
                           group: "System & Governance", 
                           perms: ["VIEW_AUDIT_LOGS", "VIEW_SYSTEM_STATUS", "MANAGE_USERS", "MANAGE_ROLES", "MANAGE_CONFIG"] 
                         }
