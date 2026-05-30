@@ -14,6 +14,7 @@ export default function SecurityPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProfile();
@@ -49,7 +50,10 @@ export default function SecurityPage() {
     setLoading(true);
     setError("");
     try {
-      await api.post("/auth/mfa/verify", { token });
+      const response = await api.post("/auth/mfa/verify", { token });
+      if (response.data.recoveryCodes) {
+        setRecoveryCodes(response.data.recoveryCodes);
+      }
       setStep("completed");
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid verification code. Please try again.");
@@ -66,6 +70,7 @@ export default function SecurityPage() {
       setStep("initial");
       setToken("");
       setMfaData(null);
+      setRecoveryCodes([]);
     } catch (err) {
       setError("Failed to disable MFA. Please try again.");
     } finally {
@@ -82,7 +87,7 @@ export default function SecurityPage() {
           <h1 className="page-title">Security & Authentication</h1>
           <p className="text-slate-400 text-[13px] font-bold uppercase tracking-widest mt-1">Manage your account security and MFA</p>
         </header>
-
+        
         <div className="max-w-2xl">
           <div className="glass-card mb-8">
             <div className="flex items-start justify-between mb-8">
@@ -190,16 +195,50 @@ export default function SecurityPage() {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }} 
                   animate={{ opacity: 1, scale: 1 }} 
-                  className="text-center py-10"
+                  className="space-y-6 animate-fade-in"
                 >
-                  <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                  <div className="text-center py-6">
+                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">MFA Activated!</h3>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                      Your account is now protected with multi-factor authentication. You'll need your code for future sign-ins.
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">MFA Activated!</h3>
-                  <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-                    Your account is now protected with multi-factor authentication. You'll need your code for future sign-ins.
-                  </p>
-                  <div className="flex gap-4 mt-8 max-w-sm mx-auto">
+
+                  {recoveryCodes.length > 0 && (
+                    <div className="p-6 bg-slate-950 text-slate-100 rounded-3xl border border-slate-900 space-y-4 shadow-xl">
+                      <div className="text-center">
+                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Emergency Recovery Codes</p>
+                        <p className="text-[10px] text-slate-400 mt-1 leading-normal">
+                          Save these backup codes in a safe place. Each code can only be used once!
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[11px] font-bold text-center tracking-wider max-w-md mx-auto py-2">
+                        {recoveryCodes.map((code) => (
+                          <div key={code} className="bg-slate-900 border border-slate-850 p-2.5 rounded-xl select-all">
+                            {code}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="text-center pt-2">
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(recoveryCodes.join("\n"));
+                            alert("Recovery codes copied to clipboard!");
+                          }}
+                          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                        >
+                          Copy All Codes
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 max-w-sm mx-auto pt-4">
                     <button 
                       onClick={() => window.location.href = '/dashboard'}
                       className="btn-secondary flex-1 py-3"

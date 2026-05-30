@@ -24,6 +24,7 @@ model User {
   whatsappNotificationEnabled   Boolean        @default(true)
   telegramNotificationEnabled    Boolean        @default(true)
   mfaSecret         String?
+  mfaRecoveryCodes  String?
   failedLoginAttempts Int          @default(0)
   lockoutUntil      DateTime?
   lastLogin         DateTime?

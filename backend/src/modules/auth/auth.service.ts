@@ -207,24 +207,49 @@ export class AuthService {
       authenticator.options = { window: 20 };
       const cleanToken = dto.mfaToken.replace(/\s+/g, '').trim();
 
-      // Emergency Bypass
-      if (cleanToken === '000000') {
-        this.logger.warn(`[EMERGENCY] MFA bypassed for user ${user.email} using master token.`);
-      } else {
-        const isMfaValid = authenticator.check(cleanToken, user.mfaSecret);
-        
-        if (!isMfaValid) {
-          await this.auditService.log(
-            user.id,
-            'FAILED_LOGIN_MFA_FAILED',
-            'User',
-            user.id,
-            { email: dto.email, message: 'Invalid MFA token', ipAddress, userAgent },
-            ipAddress,
-            userAgent
-          );
-          throw new UnauthorizedException('Invalid MFA token. Please ensure your device time is synced.');
+      // Emergency Recovery Codes Validation
+      let isMfaValid = false;
+      let usedRecoveryCode = false;
+
+      if (cleanToken.startsWith('YATO-RC-') && user.mfaRecoveryCodes) {
+        const storedHashedCodes = user.mfaRecoveryCodes.split(',');
+        let matchingIndex = -1;
+
+        for (let i = 0; i < storedHashedCodes.length; i++) {
+          const match = await bcrypt.compare(cleanToken, storedHashedCodes[i]);
+          if (match) {
+            matchingIndex = i;
+            break;
+          }
         }
+
+        if (matchingIndex !== -1) {
+          isMfaValid = true;
+          usedRecoveryCode = true;
+          this.logger.warn(`User ${user.email} successfully logged in using emergency recovery code.`);
+
+          // Consume the used recovery code
+          storedHashedCodes.splice(matchingIndex, 1);
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: { mfaRecoveryCodes: storedHashedCodes.join(',') }
+          });
+        }
+      } else {
+        isMfaValid = authenticator.check(cleanToken, user.mfaSecret);
+      }
+
+      if (!isMfaValid) {
+        await this.auditService.log(
+          user.id,
+          'FAILED_LOGIN_MFA_FAILED',
+          'User',
+          user.id,
+          { email: dto.email, message: 'Invalid MFA token', ipAddress, userAgent },
+          ipAddress,
+          userAgent
+        );
+        throw new UnauthorizedException('Invalid MFA token. Please ensure your device time is synced.');
       }
     }
 
@@ -351,12 +376,29 @@ export class AuthService {
       throw new BadRequestException('Invalid MFA token. Please ensure your device time is synced.');
     }
 
+    // Generate 5 emergency recovery codes
+    const recoveryCodes: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const part1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const part2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+      recoveryCodes.push(`YATO-RC-${part1}-${part2}`);
+    }
+
+    // Hash codes with bcrypt for secure storage
+    const hashedCodes = await Promise.all(
+      recoveryCodes.map((code) => bcrypt.hash(code, 10))
+    );
+
     await this.prisma.user.update({
       where: { id: userId },
-      data: { isMfaEnabled: true },
+      data: { 
+        isMfaEnabled: true,
+        mfaRecoveryCodes: hashedCodes.join(','),
+      },
     });
 
-    return { success: true };
+    this.logger.log(`MFA enabled for user ${userId}. Generated 5 emergency recovery codes.`);
+    return { success: true, recoveryCodes };
   }
 
   async disableMfa(userId: string) {
