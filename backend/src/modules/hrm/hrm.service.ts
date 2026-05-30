@@ -278,6 +278,42 @@ export class HrmService {
     });
   }
 
+  async getAllTimesheets(dateStr: string) {
+    const targetDate = new Date(dateStr);
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59);
+
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        division: { select: { name: true } },
+      },
+      orderBy: { fullName: 'asc' },
+    });
+
+    const timesheets = await this.prisma.timesheet.findMany({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      include: {
+        logs: { orderBy: { timestamp: 'asc' } },
+      },
+    });
+
+    return users.map(user => {
+      const ts = timesheets.find(t => t.userId === user.id);
+      return {
+        user,
+        timesheet: ts || null,
+      };
+    });
+  }
+
   async getDivisionTimesheets(divisionId: string, dateStr: string) {
     const targetDate = new Date(dateStr);
     return this.prisma.timesheet.findMany({

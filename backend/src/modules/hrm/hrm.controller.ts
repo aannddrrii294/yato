@@ -100,6 +100,12 @@ export class HrmController {
     return this.hrmService.getMyTimesheets(req.user.id, parseInt(year, 10), parseInt(month, 10));
   }
 
+  @Get('timesheets/all')
+  @ApiOperation({ summary: 'Get timesheets for all users on a specific date (Admin/HR only)' })
+  async getAllTimesheets(@Query('date') date: string) {
+    return this.hrmService.getAllTimesheets(date);
+  }
+
   @Get('timesheets/division/:divisionId')
   @ApiOperation({ summary: 'Get timesheets for all users in a division on a specific date' })
   async getDivisionTimesheets(@Param('divisionId') divisionId: string, @Query('date') date: string) {

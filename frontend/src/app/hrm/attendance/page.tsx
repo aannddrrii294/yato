@@ -15,7 +15,10 @@ import {
   Shield,
   Laptop,
   MapPin,
-  Loader2
+  Loader2,
+  Users,
+  Search,
+  Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -32,6 +35,11 @@ export default function AttendancePage() {
   const [clientIp, setClientIp] = useState("192.168.201.18");
   const [showLatePrompt, setShowLatePrompt] = useState(false);
 
+  // Admin Dashboard states
+  const [activeTab, setActiveTab] = useState<"terminal" | "admin">("terminal");
+  const [selectedAdminDate, setSelectedAdminDate] = useState(getFormattedDate(new Date()));
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     fetch("https://api.ipify.org?format=json")
       .then((res) => res.json())
@@ -45,6 +53,18 @@ export default function AttendancePage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch logged-in user profile to check if they are ADMIN or HR
+  const { data: profile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const response = await api.get("/auth/profile");
+      return response.data;
+    },
+  });
+
+  const userRoles = profile?.roles?.map((ur: any) => ur.role.name) || [];
+  const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("HR");
 
   const startRosterDate = getFormattedDate(new Date(new Date().setDate(new Date().getDate() - 15)));
   const endRosterDate = getFormattedDate(new Date(new Date().setDate(new Date().getDate() + 15)));
@@ -73,6 +93,16 @@ export default function AttendancePage() {
   const todayTimesheet = timesheets.find(
     (t: any) => getFormattedDate(new Date(t.date)) === todayStr
   );
+
+  // Fetch ALL user timesheets for a given date (Admin feature)
+  const { data: adminAttendance = [], isLoading: isAdminAttendanceLoading } = useQuery({
+    queryKey: ["hrm", "admin-attendance", selectedAdminDate],
+    queryFn: async () => {
+      const res = await api.get(`/hrm/timesheets/all?date=${selectedAdminDate}`);
+      return res.data;
+    },
+    enabled: isAdmin,
+  });
 
   useEffect(() => {
     if (todayShift?.shiftCategory) {
@@ -123,212 +153,413 @@ export default function AttendancePage() {
     setWorkNotes("");
   };
 
+  // Filtered employees for Admin View
+  const filteredAttendance = adminAttendance.filter((record: any) => {
+    const nameMatch = record.user.fullName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const emailMatch = record.user.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const divisionMatch = record.user.division?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return nameMatch || emailMatch || divisionMatch;
+  });
+
+  const totalEmployees = adminAttendance.length;
+  const presentEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "PRESENT").length;
+  const lateEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "LATE").length;
+  const absentEmployees = totalEmployees - presentEmployees - lateEmployees;
+
   return (
     <div className="flex min-h-screen bg-background font-sans text-[13px] text-slate-900">
       <MobileNav />
       <Sidebar />
 
       <main className="page-container flex-1">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
+        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-5">
+          <div className="flex-1">
             <PageHeader 
               title="Attendance Control" 
-              subtitle="Real-time terminal, geo-whitelisted log entries, and automated lateness reporting" 
+              subtitle={activeTab === "terminal" ? "Real-time terminal, geo-whitelisted log entries, and automated lateness reporting" : "Company-wide attendance monitoring, timesheet checks, and IP audit logs"} 
             />
           </div>
+          {isAdmin && (
+            <div className="bg-slate-50 border border-slate-150/60 p-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm">
+              <button
+                onClick={() => setActiveTab("terminal")}
+                className={cn(
+                  "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
+                  activeTab === "terminal"
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
+                    : "text-slate-400 hover:text-slate-850 font-bold"
+                )}
+              >
+                <Laptop className="w-3.5 h-3.5" />
+                Terminal Clock
+              </button>
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={cn(
+                  "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
+                  activeTab === "admin"
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
+                    : "text-slate-400 hover:text-slate-850 font-bold"
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Admin Panel
+              </button>
+            </div>
+          )}
         </header>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-blue-50 p-3 rounded-2xl">
-              <Shield className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Whitelist</div>
-              <div className="text-xs font-bold text-slate-700 mt-0.5 truncate">{clientIp} (Logged)</div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-amber-50 p-3 rounded-2xl">
-              <Briefcase className="w-6 h-6 text-amber-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Shift Assigned</div>
-              <div className="text-sm font-bold text-slate-850 mt-0.5">
-                {todayShift?.shiftCategory?.name || "No Scheduled Shift"}
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-emerald-50 p-3 rounded-2xl">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Working Hours</div>
-              <div className="text-sm font-bold text-slate-850 mt-0.5">
-                {todayTimesheet ? `${todayTimesheet.totalHours} Hours Logged` : "0.0 Hours"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Live Terminal Clock Card */}
-          <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm flex flex-col justify-between min-h-[380px] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/30 rounded-full filter blur-3xl" />
-            
-            <div className="space-y-6">
-              <div className="flex items-center justify-between z-10 relative">
-                <span className="bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-                  Live Terminal
-                </span>
-                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
-                  <MapPin className="w-3.5 h-3.5 text-slate-450" />
-                  <span>Office VPN / LAN</span>
+        {activeTab === "terminal" ? (
+          <div>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-blue-50 p-3 rounded-2xl">
+                  <Shield className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Whitelist</div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5 truncate">{clientIp} (Logged)</div>
                 </div>
               </div>
 
-              <div className="py-4 text-center z-10 relative">
-                <div className="text-5xl font-extrabold tracking-widest text-slate-850 font-mono bg-slate-50 border border-slate-100 inline-block px-6 py-3.5 rounded-2xl">
-                  {currentTime.toLocaleTimeString("en-GB", { hour12: false })}
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-amber-50 p-3 rounded-2xl">
+                  <Briefcase className="w-6 h-6 text-amber-600" />
                 </div>
-                <div className="text-xs font-bold text-slate-400 mt-3">
-                  {currentTime.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-6 border-t border-slate-100 relative z-10">
-              {todayShift?.shiftCategory ? (
-                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Shift Hours</div>
-                  <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>{todayShift.shiftCategory.name}</span>
-                    <span className="text-blue-600 font-mono">
-                      {todayShift.shiftCategory.startTime} - {todayShift.shiftCategory.endTime}
-                    </span>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Shift Assigned</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {todayShift?.shiftCategory?.name || "No Scheduled Shift"}
                   </div>
                 </div>
-              ) : (
-                <div className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 p-3.5 rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
-                  <span>No shift assigned for today. Clock-in unavailable.</span>
-                </div>
-              )}
+              </div>
 
-              {todayShift?.shiftCategory && showLatePrompt && !todayTimesheet && (
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest block flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Lateness Reason (Required)</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Traffic jam or network issue..."
-                    value={latenessReason}
-                    onChange={(e) => setLatenessReason(e.target.value)}
-                    className="input-field w-full text-xs py-2 bg-slate-50 border-slate-200"
-                  />
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-emerald-50 p-3 rounded-2xl">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                 </div>
-              )}
-
-              {todayShift?.shiftCategory && (
                 <div>
-                  {!todayTimesheet ? (
-                    <button
-                      onClick={handleClockIn}
-                      disabled={clockInMutation.isPending || (showLatePrompt && !latenessReason.trim())}
-                      className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-blue-500/10"
-                    >
-                      {clockInMutation.isPending ? "Clocking In..." : "🚀 CLOCK IN (PRESENT)"}
-                    </button>
-                  ) : !todayTimesheet.logs.find((l: any) => l.type === "CHECK_OUT") ? (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Add daily report summary (optional)..."
-                        value={workNotes}
-                        onChange={(e) => setWorkNotes(e.target.value)}
-                        className="input-field w-full text-xs py-2.5 bg-slate-50 border-slate-200"
-                      />
-                      <button
-                        onClick={handleClockOut}
-                        disabled={clockOutMutation.isPending}
-                        className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-amber-500/10"
-                      >
-                        {clockOutMutation.isPending ? "Clocking Out..." : "🏁 CLOCK OUT"}
-                      </button>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Working Hours</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {todayTimesheet ? `${todayTimesheet.totalHours} Hours Logged` : "0.0 Hours"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Live Terminal Clock Card */}
+              <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm flex flex-col justify-between min-h-[380px] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/30 rounded-full filter blur-3xl" />
+                
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between z-10 relative">
+                    <span className="bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                      Live Terminal
+                    </span>
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold">
+                      <MapPin className="w-3.5 h-3.5 text-slate-455" />
+                      <span>Office VPN / LAN</span>
+                    </div>
+                  </div>
+
+                  <div className="py-4 text-center z-10 relative">
+                    <div className="text-5xl font-extrabold tracking-widest text-slate-850 font-mono bg-slate-50 border border-slate-100 inline-block px-6 py-3.5 rounded-2xl">
+                      {currentTime.toLocaleTimeString("en-GB", { hour12: false })}
+                    </div>
+                    <div className="text-xs font-bold text-slate-400 mt-3">
+                      {currentTime.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t border-slate-100 relative z-10">
+                  {todayShift?.shiftCategory ? (
+                    <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Shift Hours</div>
+                      <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                        <span>{todayShift.shiftCategory.name}</span>
+                        <span className="text-blue-600 font-mono">
+                          {todayShift.shiftCategory.startTime} - {todayShift.shiftCategory.endTime}
+                        </span>
+                      </div>
                     </div>
                   ) : (
-                    <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold p-4 rounded-2xl flex items-center justify-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      <span>Shift Completed for Today! ({todayTimesheet.totalHours} hrs worked)</span>
+                    <div className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 p-3.5 rounded-xl flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      <span>No shift assigned for today. Clock-in unavailable.</span>
+                    </div>
+                  )}
+
+                  {todayShift?.shiftCategory && showLatePrompt && !todayTimesheet && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest block flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Lateness Reason (Required)</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Traffic jam or network issue..."
+                        value={latenessReason}
+                        onChange={(e) => setLatenessReason(e.target.value)}
+                        className="input-field w-full text-xs py-2 bg-slate-50 border-slate-200"
+                      />
+                    </div>
+                  )}
+
+                  {todayShift?.shiftCategory && (
+                    <div>
+                      {!todayTimesheet ? (
+                        <button
+                          onClick={handleClockIn}
+                          disabled={clockInMutation.isPending || (showLatePrompt && !latenessReason.trim())}
+                          className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-blue-500/10"
+                        >
+                          {clockInMutation.isPending ? "Clocking In..." : "🚀 CLOCK IN (PRESENT)"}
+                        </button>
+                      ) : !todayTimesheet.logs.find((l: any) => l.type === "CHECK_OUT") ? (
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            placeholder="Add daily report summary (optional)..."
+                            value={workNotes}
+                            onChange={(e) => setWorkNotes(e.target.value)}
+                            className="input-field w-full text-xs py-2.5 bg-slate-50 border-slate-200"
+                          />
+                          <button
+                            onClick={handleClockOut}
+                            disabled={clockOutMutation.isPending}
+                            className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-amber-500/10"
+                          >
+                            {clockOutMutation.isPending ? "Clocking Out..." : "🏁 CLOCK OUT"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold p-4 rounded-2xl flex items-center justify-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          <span>Shift Completed for Today! ({todayTimesheet.totalHours} hrs worked)</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Today's Log History */}
+              <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm lg:col-span-2 flex flex-col justify-between min-h-[380px]">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                      <Laptop className="w-4.5 h-4.5 text-blue-600" />
+                      <span>Today's Attendance Logs</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {todayTimesheet ? todayTimesheet.logs.length : 0} logs registered
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                    {todayTimesheet?.logs.map((log: any) => (
+                      <div
+                        key={log.id}
+                        className="bg-slate-50/50 border border-slate-100 p-3.5 rounded-xl flex items-center justify-between text-xs hover:border-slate-200 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "w-2.5 h-2.5 rounded-full",
+                            log.type === "CHECK_IN" ? "bg-blue-500" : "bg-amber-500"
+                          )} />
+                          <div>
+                            <div className="font-bold text-slate-800">{log.type}</div>
+                            <div className="text-[10px] text-slate-400 font-medium">IP Address: {log.ipAddress}</div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="font-mono text-slate-700 font-bold">
+                            {new Date(log.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                          <div className="text-[9px] text-slate-400 font-semibold uppercase">{log.device?.includes("Mobi") ? "Mobile" : "Desktop"}</div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!todayTimesheet || todayTimesheet.logs.length === 0) && (
+                      <div className="py-16 text-center text-slate-400 font-medium text-xs">
+                        No attendance check logs recorded for today yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/50 border border-blue-100/50 p-4 rounded-2xl flex items-center gap-3 text-xs text-blue-800 mt-6">
+                  <AlertCircle className="w-5 h-5 text-blue-600 shrink-0" />
+                  <div>
+                    <strong className="text-blue-900">Anti-Fraud Safeguard:</strong> All check-ins and check-outs are audited with precise location geolocation tags, user-agents, and registered office white-listed IP addresses.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Quick Stats Grid (Admin Mode) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-slate-50 p-3 rounded-2xl">
+                  <Users className="w-6 h-6 text-slate-650" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Employees</div>
+                  <div className="text-xl font-black text-slate-800 mt-0.5">{totalEmployees}</div>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-emerald-50 p-3 rounded-2xl">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Present Today</div>
+                  <div className="text-xl font-black text-slate-800 mt-0.5">{presentEmployees}</div>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-amber-50 p-3 rounded-2xl">
+                  <AlertCircle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Late Today</div>
+                  <div className="text-xl font-black text-slate-800 mt-0.5">{lateEmployees}</div>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-rose-50 p-3 rounded-2xl">
+                  <AlertCircle className="w-6 h-6 text-rose-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Absent Today</div>
+                  <div className="text-xl font-black text-slate-800 mt-0.5">{absentEmployees}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Table Container */}
+            <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                {/* Search Bar */}
+                <div className="relative w-full md:max-w-xs">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search name, email, division..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="input-field w-full pl-10 text-xs py-2 bg-slate-50 border-slate-200"
+                  />
+                </div>
+
+                {/* Date Picker */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="date"
+                    value={selectedAdminDate}
+                    onChange={(e) => setSelectedAdminDate(e.target.value)}
+                    className="input-field text-xs bg-slate-50 border-slate-200 py-1.5 px-3 cursor-pointer rounded-xl font-bold text-slate-700"
+                  />
+                </div>
+              </div>
+
+              {/* Table */}
+              {isAdminAttendanceLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-600" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Fetching Attendance Data...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                        <th className="py-4 px-4">Employee</th>
+                        <th className="py-4 px-4">Division</th>
+                        <th className="py-4 px-4">Status</th>
+                        <th className="py-4 px-4">Check-In</th>
+                        <th className="py-4 px-4">Check-Out</th>
+                        <th className="py-4 px-4">IP Address</th>
+                        <th className="py-4 px-4">Lateness Reason / Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredAttendance.map((record: any) => {
+                        const ts = record.timesheet;
+                        const inLog = ts?.logs?.find((l: any) => l.type === "CHECK_IN");
+                        const outLog = ts?.logs?.find((l: any) => l.type === "CHECK_OUT");
+
+                        return (
+                          <tr key={record.user.id} className="hover:bg-slate-50/40 transition-colors text-xs">
+                            <td className="py-4 px-4">
+                              <div className="font-extrabold text-slate-800">{record.user.fullName}</div>
+                              <div className="text-[10px] text-slate-400 font-semibold">{record.user.email}</div>
+                            </td>
+                            <td className="py-4 px-4 text-slate-500 font-bold">{record.user.division?.name || "N/A"}</td>
+                            <td className="py-4 px-4">
+                              <span className={cn(
+                                "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
+                                ts?.status === "PRESENT" && "bg-emerald-50 text-emerald-600 border-emerald-100",
+                                ts?.status === "LATE" && "bg-amber-50 text-amber-600 border-amber-100",
+                                (!ts || ts.status === "ABSENT") && "bg-rose-50 text-rose-600 border-rose-100"
+                              )}>
+                                {ts ? ts.status : "ABSENT"}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 font-mono font-bold text-slate-700">
+                              {inLog 
+                                ? new Date(inLog.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) 
+                                : "--:--"
+                              }
+                            </td>
+                            <td className="py-4 px-4 font-mono font-bold text-slate-700">
+                              {outLog 
+                                ? new Date(outLog.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) 
+                                : "--:--"
+                              }
+                            </td>
+                            <td className="py-4 px-4 font-mono text-[11px] text-slate-500">
+                              {inLog?.ipAddress || "N/A"}
+                            </td>
+                            <td className="py-4 px-4 max-w-[200px] truncate text-slate-450 font-medium" title={ts?.latenessReason || ts?.notes}>
+                              {ts?.latenessReason ? (
+                                <span className="text-amber-600">⚠️ {ts.latenessReason}</span>
+                              ) : ts?.notes ? (
+                                <span>📝 {ts.notes}</span>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {filteredAttendance.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-16 text-center text-slate-400 font-medium text-xs">
+                            No employees found matching the search criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Today's Log History */}
-          <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm lg:col-span-2 flex flex-col justify-between min-h-[380px]">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <Laptop className="w-4.5 h-4.5 text-blue-600" />
-                  <span>Today's Attendance Logs</span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  {todayTimesheet ? todayTimesheet.logs.length : 0} logs registered
-                </span>
-              </div>
-
-              <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
-                {todayTimesheet?.logs.map((log: any) => (
-                  <div
-                    key={log.id}
-                    className="bg-slate-50/50 border border-slate-100 p-3.5 rounded-xl flex items-center justify-between text-xs hover:border-slate-200 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={cn(
-                        "w-2.5 h-2.5 rounded-full",
-                        log.type === "CHECK_IN" ? "bg-blue-500" : "bg-amber-500"
-                      )} />
-                      <div>
-                        <div className="font-bold text-slate-800">{log.type}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">IP Address: {log.ipAddress}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="font-mono text-slate-700 font-bold">
-                        {new Date(log.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                      <div className="text-[9px] text-slate-400 font-semibold uppercase">{log.device?.includes("Mobi") ? "Mobile" : "Desktop"}</div>
-                    </div>
-                  </div>
-                ))}
-
-                {(!todayTimesheet || todayTimesheet.logs.length === 0) && (
-                  <div className="py-16 text-center text-slate-400 font-medium text-xs">
-                    No attendance check logs recorded for today yet.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-blue-50/50 border border-blue-100/50 p-4 rounded-2xl flex items-center gap-3 text-xs text-blue-800 mt-6">
-              <AlertCircle className="w-5 h-5 text-blue-600 shrink-0" />
-              <div>
-                <strong className="text-blue-900">Anti-Fraud Safeguard:</strong> All check-ins and check-outs are audited with precise location geolocation tags, user-agents, and registered office white-listed IP addresses.
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
