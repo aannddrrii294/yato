@@ -141,15 +141,16 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
     {
       title: "HR Management",
       items: [
-        { icon: Clock, label: "Attendance Control", href: "/hrm/attendance", permission: "VIEW_HRM" },
-        { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar", permission: "VIEW_HRM" },
-        { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves", permission: "VIEW_HRM" },
+        { icon: Clock, label: "Attendance Terminal", href: "/hrm/attendance" },
+        { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar" },
+        { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves" },
         // { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
       ]
     },
     {
       title: "HR Administration",
       items: [
+        { icon: Shield, label: "Management Admin Panel", href: "/hrm/admin-panel", permission: "MANAGE_HRM" },
         { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM" },
         { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_HRM" },
         { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_HRM" },

@@ -393,6 +393,28 @@ export default function LeaveHubPage() {
                     </div>
                   </div>
 
+                  {(() => {
+                    if (!leaveForm.startDate || !leaveForm.endDate) return null;
+                    const start = new Date(leaveForm.startDate);
+                    const end = new Date(leaveForm.endDate);
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+                    const diffTime = end.getTime() - start.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    return (
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 flex items-center justify-between text-xs select-none">
+                        <span className="font-bold text-slate-500">Total Durasi Cuti:</span>
+                        <span className={cn(
+                          "px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider border",
+                          diffDays <= 0 
+                            ? "bg-rose-50 text-rose-600 border-rose-100" 
+                            : "bg-blue-100 text-blue-800 border-blue-200"
+                        )}>
+                          {diffDays <= 0 ? "Tanggal Tidak Valid" : `${diffDays} Hari`}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   {customFormSettings.requireAttachment && (
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Dokumen Pendukung / Attachment URL (Required)</label>
