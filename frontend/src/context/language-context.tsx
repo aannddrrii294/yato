@@ -77,7 +77,41 @@ const enToId: Record<string, string> = {
   "all": "semua",
   "loading...": "memuat...",
   "active": "aktif",
-  "inactive": "tidak aktif"
+  "inactive": "tidak aktif",
+
+  // HRM Admin Panel & Leave Hub Translations
+  "leaves oversight": "pengawasan cuti",
+  "attendance logs": "log kehadiran",
+  "employees on leave": "karyawan sedang cuti",
+  "pending requests oversight": "pengajuan pending oversight",
+  "total registered active": "total terdaftar aktif",
+  "employees on leave today": "karyawan yang sedang cuti hari ini",
+  "no employees are on leave today.": "tidak ada karyawan yang sedang cuti hari ini.",
+  "leave form customization": "kustomisasi form cuti",
+  "enable custom fields": "aktifkan field kustom",
+  "require document attachment": "wajib lampiran dokumen",
+  "requires uploading supporting certificate url/pdf.": "meminta upload url surat keterangan/pdf pendukung.",
+  "handover employee field": "field karyawan handover",
+  "input backup employee name during leave.": "input nama karyawan yang membackup tugas selama cuti.",
+  "emergency contact field": "field kontak darurat",
+  "alternative phone number for emergency contact.": "nomor telepon alternatif yang bisa dihubungi saat darurat.",
+  "add/edit leave types": "tambah/edit jenis cuti",
+  "example: maternity leave...": "contoh: cuti melahirkan...",
+  "employee leave balances": "daftar sisa & jatah cuti karyawan",
+  "employee": "karyawan",
+  "initial balance": "jatah mula",
+  "used": "digunakan",
+  "remaining leave": "sisa cuti",
+  "all leave requests (admin log)": "semua pengajuan cuti (log admin)",
+  "no leave request activity yet.": "belum ada aktivitas pengajuan cuti sama sekali.",
+  "type:": "jenis:",
+  "reason:": "alasan:",
+  "created:": "dibuat:",
+  "people": "orang",
+  "requests": "pengajuan",
+  "employees": "karyawan",
+  "days": "hari",
+  "reason": "alasan"
 };
 
 // Build optimized reverse maps for clean two-way matching

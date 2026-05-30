@@ -31,6 +31,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/context/branding-context";
+import { useLanguage } from "@/context/language-context";
 
 const getFormattedDate = (date: any) => {
   if (!date) return "";
@@ -51,6 +52,7 @@ function ManagementAdminPanelContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { appName, appLogo } = useBranding();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"attendance" | "leaves">("attendance");
   const currentYear = new Date().getFullYear();
   const [selectedPrintLeave, setSelectedPrintLeave] = useState<any | null>(null);
@@ -447,14 +449,14 @@ function ManagementAdminPanelContent() {
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Karyawan Sedang Cuti</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("Employees on Leave")}</div>
                   <div className="text-lg font-bold text-slate-800 mt-0.5">
                     {adminRequests.filter((r: any) => {
                       const today = new Date();
                       const start = new Date(r.startDate);
                       const end = new Date(r.endDate);
                       return r.status === "APPROVED" && today >= start && today <= end;
-                    }).length} Orang
+                    }).length} {t("People")}
                   </div>
                 </div>
               </div>
@@ -464,9 +466,9 @@ function ManagementAdminPanelContent() {
                   <Clock className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pengajuan Pending Oversight</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("Pending Requests Oversight")}</div>
                   <div className="text-lg font-bold text-amber-600 mt-0.5">
-                    {adminRequests.filter((r: any) => r.status === "PENDING").length} Pengajuan
+                    {adminRequests.filter((r: any) => r.status === "PENDING").length} {t("Requests")}
                   </div>
                 </div>
               </div>
@@ -476,9 +478,9 @@ function ManagementAdminPanelContent() {
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Terdaftar Aktif</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("Total Registered Active")}</div>
                   <div className="text-lg font-bold text-emerald-600 mt-0.5">
-                    {adminBalances.length} Karyawan
+                    {adminBalances.length} {t("Employees")}
                   </div>
                 </div>
               </div>
@@ -488,7 +490,7 @@ function ManagementAdminPanelContent() {
             <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
               <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <Calendar className="w-4.5 h-4.5 text-blue-600" />
-                <span>Karyawan yang Sedang Cuti Hari Ini</span>
+                <span>{t("Employees on Leave Today")}</span>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -503,7 +505,7 @@ function ManagementAdminPanelContent() {
                   if (onLeaveUsers.length === 0) {
                     return (
                       <div className="col-span-full py-8 text-center text-slate-400 font-semibold text-xs">
-                        Tidak ada karyawan yang sedang cuti hari ini.
+                        {t("No employees are on leave today.")}
                       </div>
                     );
                   }
@@ -515,7 +517,7 @@ function ManagementAdminPanelContent() {
                         {req.user.division?.name || "No Division"} • {req.type.replace(/_/g, " ")}
                       </div>
                       <div className="text-[11px] text-slate-655 font-medium">
-                        Tanggal: {new Date(req.startDate).toLocaleDateString()} s/d {new Date(req.endDate).toLocaleDateString()}
+                        {t("Date")}: {new Date(req.startDate).toLocaleDateString()} {t("to")} {new Date(req.endDate).toLocaleDateString()}
                       </div>
                       <div className="text-[11px] italic text-slate-500 truncate mt-1">
                         "{req.reason}"
@@ -648,9 +650,9 @@ function ManagementAdminPanelContent() {
                               <div className="font-extrabold text-slate-800">{bal.fullName}</div>
                               <div className="text-[10px] text-slate-400 font-medium">{bal.divisionName} • {bal.email}</div>
                             </td>
-                            <td className="py-3 text-center font-bold text-slate-700">{bal.allocated} Hari</td>
-                            <td className="py-3 text-center font-bold text-amber-600">{bal.used} Hari</td>
-                            <td className="py-3 text-center font-black text-blue-600">{bal.remaining} Hari</td>
+                            <td className="py-3 text-center font-bold text-slate-700">{bal.allocated} {t("Days")}</td>
+                            <td className="py-3 text-center font-bold text-amber-600">{bal.used} {t("Days")}</td>
+                            <td className="py-3 text-center font-black text-blue-600">{bal.remaining} {t("Days")}</td>
                             <td className="py-3 text-center">
                               <button
                                 onClick={() => {
@@ -659,7 +661,7 @@ function ManagementAdminPanelContent() {
                                 }}
                                 className="bg-slate-50 hover:bg-slate-100 text-slate-655 p-2 rounded-xl inline-flex items-center gap-1.5 font-bold transition-all border border-slate-200"
                               >
-                                <Edit2 className="w-3 h-3 text-blue-600" /> Adjust
+                                <Edit2 className="w-3 h-3 text-blue-600" /> {t("Adjust")}
                               </button>
                             </td>
                           </tr>
@@ -673,7 +675,7 @@ function ManagementAdminPanelContent() {
                 <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
                   <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <Shield className="w-4.5 h-4.5 text-blue-600" />
-                    <span>Semua Pengajuan Cuti (Log Admin)</span>
+                    <span>{t("All Leave Requests (Admin Log)")}</span>
                   </div>
 
                   <div className="space-y-4 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
@@ -695,16 +697,16 @@ function ManagementAdminPanelContent() {
                         </div>
 
                         <div className="text-xs text-slate-655 font-bold">
-                          Jenis: {req.type.replace(/_/g, " ")} • 📅 {new Date(req.startDate).toLocaleDateString()} s/d {new Date(req.endDate).toLocaleDateString()}
+                          {t("Type:")} {req.type.replace(/_/g, " ")} • 📅 {new Date(req.startDate).toLocaleDateString()} {t("to")} {new Date(req.endDate).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-slate-500 italic bg-white border border-slate-100 rounded-xl p-2.5">
-                          Alasan: "{req.reason}"
+                          {t("Reason:")} "{req.reason}"
                         </div>
 
                         {/* Admin Action Override controls */}
                         <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100">
                           <div className="text-[10px] text-slate-400 font-medium">
-                            Dibuat: {new Date(req.createdAt).toLocaleString()}
+                            {t("Created:")} {new Date(req.createdAt).toLocaleString()}
                           </div>
                           
                           <div className="flex gap-2">
@@ -714,7 +716,7 @@ function ManagementAdminPanelContent() {
                               title="Export to PDF / Preview PDF"
                             >
                               <Printer className="w-3.5 h-3.5 text-blue-655" />
-                              <span>Export PDF</span>
+                              <span>{t("Export PDF")}</span>
                             </button>
                             <button
                               onClick={() => {
@@ -724,7 +726,7 @@ function ManagementAdminPanelContent() {
                               }}
                               className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer border border-emerald-200 transition-all border-dashed"
                             >
-                              Force Approve
+                              {t("Force Approve")}
                             </button>
                             <button
                               onClick={() => {
@@ -734,7 +736,7 @@ function ManagementAdminPanelContent() {
                               }}
                               className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer border border-rose-200 transition-all border-dashed"
                             >
-                              Force Reject
+                              {t("Force Reject")}
                             </button>
                           </div>
                         </div>
@@ -743,7 +745,7 @@ function ManagementAdminPanelContent() {
 
                     {adminRequests.length === 0 && (
                       <div className="py-16 text-center text-slate-400 font-semibold text-xs">
-                        Belum ada aktivitas pengajuan cuti sama sekali.
+                        {t("No leave request activity yet.")}
                       </div>
                     )}
                   </div>
