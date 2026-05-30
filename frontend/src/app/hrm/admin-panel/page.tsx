@@ -31,8 +31,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/context/branding-context";
 
-const getFormattedDate = (date: Date) => {
-  return date.toISOString().split("T")[0];
+const getFormattedDate = (date: any) => {
+  if (!date) return "";
+  if (typeof date === "string" && date.includes("T")) {
+    return date.split("T")[0];
+  }
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+    return date.substring(0, 10);
+  }
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export default function ManagementAdminPanelPage() {
