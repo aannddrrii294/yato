@@ -296,30 +296,20 @@ export default function CalendarPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={handleClockIn}
-                      disabled={!!checkInLog || clockInMutation.isPending}
-                      className={cn(
-                        "py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
-                        !!checkInLog 
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60"
-                          : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]"
-                      )}
+                      disabled={clockInMutation.isPending}
+                      className="py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]"
                     >
                       <Clock className="w-5 h-5" />
-                      <span>{checkInLog ? "Checked In" : "Check In"}</span>
+                      <span>{clockInMutation.isPending ? "Checking In..." : "Check In"}</span>
                     </button>
 
                     <button
                       onClick={handleClockOut}
-                      disabled={!checkInLog || !!checkOutLog || clockOutMutation.isPending}
-                      className={cn(
-                        "py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
-                        (!checkInLog || !!checkOutLog)
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60"
-                          : "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/10 hover:shadow-xl hover:shadow-amber-500/20 active:scale-[0.98]"
-                      )}
+                      disabled={clockOutMutation.isPending}
+                      className="py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/10 hover:shadow-xl hover:shadow-amber-500/20 active:scale-[0.98]"
                     >
                       <CheckCircle2 className="w-5 h-5" />
-                      <span>{checkOutLog ? "Checked Out" : "Check Out"}</span>
+                      <span>{clockOutMutation.isPending ? "Checking Out..." : "Check Out"}</span>
                     </button>
                   </div>
 
