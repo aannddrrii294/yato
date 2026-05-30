@@ -231,7 +231,7 @@ export default function CalendarPage() {
                     <div className="space-y-1 mt-3">
                       {ts?.totalHours > 0 && (
                         <div className="text-[11px] font-mono font-bold text-slate-700">
-                          ⏱️ {ts.totalHours} hrs
+                          {ts.totalHours} hrs
                         </div>
                       )}
                       {ts?.notes && (
@@ -326,10 +326,10 @@ export default function CalendarPage() {
                         <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
                         <span>Check-In Recorded Successfully</span>
                       </div>
-                      <div className="text-[11px] text-slate-600 font-medium space-y-1 pl-6">
-                        <p>📅 <strong className="text-slate-800">Tanggal:</strong> {new Date(checkInLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-                        <p>⏱️ <strong className="text-slate-800">Jam:</strong> {new Date(checkInLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
-                        <p>💻 <strong className="text-slate-800">IP Address:</strong> {checkInLog.ipAddress || "LAN/Office Network"}</p>
+                      <div className="text-[11px] text-slate-655 font-medium space-y-1 pl-6">
+                        <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkInLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                        <p><strong className="text-slate-800">Jam:</strong> {new Date(checkInLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                        <p><strong className="text-slate-800">IP Address:</strong> {checkInLog.ipAddress || "LAN/Office Network"}</p>
                       </div>
                     </div>
                   )}
@@ -340,10 +340,10 @@ export default function CalendarPage() {
                         <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
                         <span>Check-Out Recorded Successfully</span>
                       </div>
-                      <div className="text-[11px] text-slate-600 font-medium space-y-1 pl-6">
-                        <p>📅 <strong className="text-slate-800">Tanggal:</strong> {new Date(checkOutLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
-                        <p>⏱️ <strong className="text-slate-800">Jam:</strong> {new Date(checkOutLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
-                        <p>⏱️ <strong className="text-slate-800">Total Hours:</strong> {todayTimesheet?.totalHours || 0} hrs</p>
+                      <div className="text-[11px] text-slate-655 font-medium space-y-1 pl-6">
+                        <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkOutLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                        <p><strong className="text-slate-800">Jam:</strong> {new Date(checkOutLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                        <p><strong className="text-slate-800">Total Hours:</strong> {todayTimesheet?.totalHours || 0} hrs</p>
                       </div>
                     </div>
                   )}
