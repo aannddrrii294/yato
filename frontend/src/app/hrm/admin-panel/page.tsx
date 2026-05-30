@@ -24,10 +24,12 @@ import {
   X,
   Edit2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Printer
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/context/branding-context";
 
 const getFormattedDate = (date: Date) => {
   return date.toISOString().split("T")[0];
@@ -35,8 +37,17 @@ const getFormattedDate = (date: Date) => {
 
 export default function ManagementAdminPanelPage() {
   const queryClient = useQueryClient();
+  const { appName, appLogo } = useBranding();
   const [activeTab, setActiveTab] = useState<"attendance" | "leaves">("attendance");
   const currentYear = new Date().getFullYear();
+  const [selectedPrintLeave, setSelectedPrintLeave] = useState<any | null>(null);
+
+  const handlePrintLeaveForm = (leave: any) => {
+    setSelectedPrintLeave(leave);
+    setTimeout(() => {
+      window.print();
+    }, 200);
+  };
 
   // ATTENDANCE ADMINISTRATIVE STATES
   const [selectedAdminDate, setSelectedAdminDate] = useState(getFormattedDate(new Date()));
@@ -663,6 +674,14 @@ export default function ManagementAdminPanelPage() {
                           
                           <div className="flex gap-2">
                             <button
+                              onClick={() => handlePrintLeaveForm(req)}
+                              className="bg-slate-50 hover:bg-slate-100 text-slate-655 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer border border-slate-200 transition-all flex items-center gap-1.5 shadow-sm"
+                              title="Export to PDF / Preview PDF"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-blue-655" />
+                              <span>Export PDF</span>
+                            </button>
+                            <button
                               onClick={() => {
                                 const notes = prompt("Catatan admin untuk persetujuan:");
                                 if (notes === null) return;
@@ -770,6 +789,164 @@ export default function ManagementAdminPanelPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Printable Leave Request Form */}
+      {selectedPrintLeave && (
+        <div id="printable-leave-form" className="hidden print:block p-12 bg-white text-black font-sans min-h-screen">
+          {/* Header Branding */}
+          <div className="flex items-center justify-between border-b-2 border-slate-950 pb-6 mb-8">
+            <div className="flex items-center gap-4">
+              {appLogo ? (
+                <img src={appLogo} alt="Logo" className="w-12 h-12 object-contain" />
+              ) : (
+                <div className="w-12 h-12 bg-slate-900 flex items-center justify-center text-white font-bold rounded-xl text-xl">
+                  Y
+                </div>
+              )}
+              <div>
+                <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">{appName || "YATO"}</h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enterprise HR Management Hub</p>
+              </div>
+            </div>
+            <div className="text-right text-[10px] font-mono text-slate-400">
+              <p>DOCUMENT ID: {selectedPrintLeave.id}</p>
+              <p>DATE GENERATED: {new Date().toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Document Title */}
+          <div className="text-center mb-8">
+            <h2 className="text-lg font-black uppercase tracking-widest text-slate-900 decoration-double underline underline-offset-4">
+              FORMULIR PENGAJUAN CUTI KARYAWAN
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">Status Dokumen: <strong className="uppercase">{selectedPrintLeave.status}</strong></p>
+          </div>
+
+          {/* Information Section */}
+          <div className="grid grid-cols-2 gap-8 mb-8 border border-slate-200 rounded-2xl p-6">
+            <div className="space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b pb-1">PROFIL KARYAWAN</h3>
+              <table className="w-full text-xs text-left">
+                <tbody>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 font-bold text-slate-500">Nama Lengkap</td>
+                    <td className="py-2 text-slate-900 font-extrabold">{selectedPrintLeave.user?.fullName || "Karyawan YATO"}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 font-bold text-slate-500">Departemen / Divisi</td>
+                    <td className="py-2 text-slate-900">{selectedPrintLeave.user?.division?.name || "Unassigned"}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 font-bold text-slate-500">Alamat Email</td>
+                    <td className="py-2 text-slate-900">{selectedPrintLeave.user?.email || "-"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 border-b pb-1">RINCIAN PENGAJUAN</h3>
+              <table className="w-full text-xs text-left">
+                <tbody>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 font-bold text-slate-500">Tipe Cuti</td>
+                    <td className="py-2 text-slate-900 font-bold uppercase">{selectedPrintLeave.type}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 font-bold text-slate-500">Durasi Cuti</td>
+                    <td className="py-2 text-slate-900 font-bold">
+                      {new Date(selectedPrintLeave.startDate).toLocaleDateString()} s/d {new Date(selectedPrintLeave.endDate).toLocaleDateString()}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 font-bold text-slate-500">Alasan / Detail</td>
+                    <td className="py-2 text-slate-900 italic">"{selectedPrintLeave.reason}"</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Workflow Tracker */}
+          <div className="space-y-4 mb-12">
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 border-b pb-2">WORKFLOW APPROVAL TRACKER (PERSETUJUAN BERJENJANG)</h3>
+            <table className="w-full text-xs border border-slate-200 rounded-xl overflow-hidden">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-3 text-left font-black text-slate-600">LEVEL</th>
+                  <th className="p-3 text-left font-black text-slate-600">ROLE JABATAN</th>
+                  <th className="p-3 text-left font-black text-slate-600">APPROVER</th>
+                  <th className="p-3 text-left font-black text-slate-600">STATUS</th>
+                  <th className="p-3 text-left font-black text-slate-600">CATATAN PENINJAUAN</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPrintLeave.approvals?.map((app: any) => (
+                  <tr key={app.id} className="border-b border-slate-100">
+                    <td className="p-3 font-mono font-bold text-slate-500">Lvl {app.level}</td>
+                    <td className="p-3 font-bold text-slate-700">{app.roleName}</td>
+                    <td className="p-3 text-slate-800">{app.approver?.fullName || "-"}</td>
+                    <td className="p-3 font-black uppercase">{app.status}</td>
+                    <td className="p-3 text-slate-500 italic">"{app.notes || '-'}"</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Signature Boxes */}
+          <div className="grid grid-cols-2 gap-12 pt-8 border-t border-slate-200">
+            <div className="text-center space-y-16">
+              <div>
+                <p className="text-xs font-bold text-slate-400">Pemohon (Karyawan),</p>
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-900 underline underline-offset-4">{selectedPrintLeave.user?.fullName || "Karyawan YATO"}</p>
+                <p className="text-[10px] text-slate-400 mt-1">Tanda Tangan & Tanggal</p>
+              </div>
+            </div>
+
+            <div className="text-center space-y-16">
+              <div>
+                <p className="text-xs font-bold text-slate-400">Penyetuju Akhir (Dept Head),</p>
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-900 underline underline-offset-4">
+                  {selectedPrintLeave.approvals?.find((a: any) => a.level === 3)?.approver?.fullName || "________________________"}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">Tanda Tangan & Tanggal</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footnote */}
+          <div className="mt-20 text-center text-[9px] text-slate-400 border-t pt-4">
+            <p>Formulir ini adalah dokumen digital resmi yang dihasilkan secara otomatis oleh {appName || "YATO"} Platform.</p>
+            <p className="font-mono mt-0.5">Checksum: MD5-{selectedPrintLeave.id.substring(0, 8).toUpperCase()}</p>
+          </div>
+
+          {/* Global Print CSS Injector */}
+          <style dangerouslySetInnerHTML={{__html: `
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              #printable-leave-form, #printable-leave-form * {
+                visibility: visible !important;
+              }
+              #printable-leave-form {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: white !important;
+                color: black !important;
+                display: block !important;
+              }
+            }
+          `}} />
+        </div>
+      )}
     </div>
   );
 }
