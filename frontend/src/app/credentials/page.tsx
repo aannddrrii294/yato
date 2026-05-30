@@ -770,7 +770,7 @@ export default function CredentialsPage() {
                 <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-600/40">
                   <Key className="w-8 h-8" />
                 </div>
-                <h3 className="text-3xl font-bold tracking-tight mb-2">{selectedCred.name}</h3>
+                <h3 className="text-2xl font-bold tracking-tight mb-2 break-all pr-10 leading-tight">{selectedCred.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedCred.tags.map(tag => (
                     <span key={tag} className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10">#{tag}</span>
@@ -784,7 +784,7 @@ export default function CredentialsPage() {
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Address</p>
                       {selectedCred.address ? (
-                        <a href={selectedCred.address} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                        <a href={selectedCred.address} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline break-all pr-4">
                           {selectedCred.address}
                         </a>
                       ) : (
@@ -806,25 +806,14 @@ export default function CredentialsPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Username / Identity</p>
-                      <p className="text-sm font-bold text-slate-900">{selectedCred.username}</p>
-                    </div>
-                    <button 
-                      onClick={() => handleCopy(selectedCred.username || "", 'username')}
-                      className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
-                    >
-                      {copiedField === 'username' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-                    </button>
-                  </div>
+
 
                   {/* Dynamic Custom Fields Rendering */}
                   {selectedCred.metadata && Object.entries(selectedCred.metadata).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100 group">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{key}</p>
-                        <div className="text-sm font-bold text-slate-900">
+                        <div className="text-sm font-bold text-slate-900 break-all pr-4">
                           {typeof value === 'boolean' ? (
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${value ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
                               {value ? 'YES' : 'NO'}
