@@ -39,6 +39,8 @@ interface EngineGroup {
 }
 
 export default function SystemStatusPage() {
+  const [activeTab, setActiveTab] = useState<'cores' | 'docker' | 'systemd'>('cores');
+
   const { data: statusData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["system-status"],
     queryFn: async () => {
@@ -48,10 +50,14 @@ export default function SystemStatusPage() {
     refetchInterval: 10000, // Refresh every 10s
   });
 
+  const coresList = statusData?.cores || [];
+  const dockerContainers = statusData?.dockerContainers || [];
+  const systemdServices = statusData?.systemdServices || [];
+
   // Dynamically map backend live status to services
   const getLiveStatus = (groupId: string, defaultStatus: ServiceStatus): ServiceStatus => {
-    if (!statusData) return defaultStatus;
-    const groupData = statusData.find((g: any) => g.id === groupId);
+    if (!coresList || coresList.length === 0) return defaultStatus;
+    const groupData = coresList.find((g: any) => g.id === groupId);
     if (!groupData) return defaultStatus;
     
     // Map live status: if backend has DEGRADED -> BUSY, if OFFLINE/DOWN -> DOWN
@@ -226,7 +232,7 @@ export default function SystemStatusPage() {
                 <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
               ))
             ) : (
-              statusData?.map((item: any) => {
+              coresList?.map((item: any) => {
                 const isHealthy = item.status === 'HEALTHY' || item.status === 'SECURE' || item.status === 'OPERATIONAL';
                 return (
                   <div key={item.id} className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm flex items-center justify-between">
@@ -252,82 +258,230 @@ export default function SystemStatusPage() {
             )}
           </div>
 
-          {/* Tableau-Style Process Status Grid Card */}
-          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mb-8">
-            
-            {/* Card Info Header */}
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">Process Status</h2>
-              <p className="text-slate-500 text-xs mt-0.5">The real-time status of daemon services and engines running in the YATO Server.</p>
-            </div>
+          {/* Premium Status Panel Navigation Tabs */}
+          <div className="flex border-b border-slate-200/80 mb-6 gap-2">
+            <button
+              onClick={() => setActiveTab('cores')}
+              className={cn(
+                "pb-3.5 px-4 font-bold text-xs uppercase tracking-widest border-b-2 transition-all outline-none",
+                activeTab === 'cores' 
+                  ? "border-blue-600 text-blue-600" 
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Core Engines
+            </button>
+            <button
+              onClick={() => setActiveTab('docker')}
+              className={cn(
+                "pb-3.5 px-4 font-bold text-xs uppercase tracking-widest border-b-2 transition-all outline-none",
+                activeTab === 'docker' 
+                  ? "border-blue-600 text-blue-600" 
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Docker Containers ({dockerContainers.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('systemd')}
+              className={cn(
+                "pb-3.5 px-4 font-bold text-xs uppercase tracking-widest border-b-2 transition-all outline-none",
+                activeTab === 'systemd' 
+                  ? "border-blue-600 text-blue-600" 
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Systemd Services ({systemdServices.length})
+            </button>
+          </div>
 
-            {/* Tableau Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-3/4">Process</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-1/4">
-                      <div className="flex flex-col items-center">
-                        <span className="font-extrabold text-slate-800">YATO Server</span>
-                        <span className="text-[10px] font-medium text-slate-400 mt-0.5 font-mono">192.168.201.18</span>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {processGroups.map((group) => {
-                    const GroupIcon = group.icon;
-                    return (
-                      <Fragment key={group.id}>
-                        <tr className="bg-slate-50/30">
-                          <td colSpan={2} className="px-6 py-3">
-                            <div className="flex items-center gap-2">
-                              <GroupIcon className="w-4 h-4 text-blue-600 animate-pulse" />
-                              <span className="text-xs font-extrabold text-slate-900 tracking-wider uppercase">{group.name}</span>
-                              <span className="text-[10px] text-slate-400 font-medium">— {group.description}</span>
+          {/* Dynamic Content Panel */}
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mb-8">
+            {activeTab === 'cores' && (
+              <>
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">Core Daemon Processes</h2>
+                  <p className="text-slate-500 text-xs mt-0.5">The real-time health and response time of YATO's core micro-engines.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-3/4">Process</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-1/4">
+                          <div className="flex flex-col items-center">
+                            <span className="font-extrabold text-slate-800">YATO Server</span>
+                            <span className="text-[10px] font-medium text-slate-400 mt-0.5 font-mono">192.168.201.18</span>
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {processGroups.map((group) => {
+                        const GroupIcon = group.icon;
+                        return (
+                          <Fragment key={group.id}>
+                            <tr className="bg-slate-50/30">
+                              <td colSpan={2} className="px-6 py-3">
+                                <div className="flex items-center gap-2">
+                                  <GroupIcon className="w-4 h-4 text-blue-600 animate-pulse" />
+                                  <span className="text-xs font-extrabold text-slate-900 tracking-wider uppercase">{group.name}</span>
+                                  <span className="text-[10px] text-slate-400 font-medium">— {group.description}</span>
+                                </div>
+                              </td>
+                            </tr>
+                            {group.services.map((service) => (
+                              <tr key={service.name} className="hover:bg-slate-50/30 transition-colors group/row">
+                                <td className="px-6 py-4 pl-10">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-sm font-semibold text-slate-800 group-hover/row:text-blue-600 transition-colors">
+                                      {service.name}
+                                    </span>
+                                    <span className="text-xs text-slate-400 font-medium">
+                                      {service.description}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="flex items-center justify-center">
+                                    {renderStatusBadge(service.status)}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'docker' && (
+              <>
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">Docker Containers</h2>
+                  <p className="text-slate-500 text-xs mt-0.5">Real-time docker microservices running within the YATO stack on the host.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Container</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Image / Tag</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status Details</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">State</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {dockerContainers.map((container: any) => (
+                        <tr key={container.name} className="hover:bg-slate-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-black text-[10px]">
+                                DC
+                              </div>
+                              <span className="text-sm font-bold text-slate-800">{container.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-xs font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/50">
+                              {container.image}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-medium text-slate-500">
+                            {container.status}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center">
+                              <span className={cn(
+                                "inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider",
+                                container.healthy 
+                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+                                  : "bg-rose-50 text-rose-600 border border-rose-100 animate-pulse"
+                              )}>
+                                {container.state}
+                              </span>
                             </div>
                           </td>
                         </tr>
-                        {group.services.map((service) => (
-                          <tr key={service.name} className="hover:bg-slate-50/30 transition-colors group/row">
-                            <td className="px-6 py-4 pl-10">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-semibold text-slate-800 group-hover/row:text-blue-600 transition-colors">
-                                  {service.name}
-                                </span>
-                                <span className="text-xs text-slate-400 font-medium">
-                                  {service.description}
-                                </span>
+                      ))}
+                      {dockerContainers.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-10 text-center text-xs text-slate-400 italic font-medium">
+                            No active docker containers found or socket not available
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'systemd' && (
+              <>
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">Systemd OS Services</h2>
+                  <p className="text-slate-500 text-xs mt-0.5">Critical system services and background daemons running on the host OS.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-1/3">Service</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-1/2">Description</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center w-1/6">State</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {systemdServices.map((service: any) => (
+                        <tr key={service.name} className="hover:bg-slate-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-mono text-[9px] font-bold">
+                                SYS
                               </div>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <div className="flex items-center justify-center">
-                                {renderStatusBadge(service.status)}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              <span className="text-sm font-bold text-slate-800 font-mono">{service.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                            {service.description}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center">
+                              <span className={cn(
+                                "inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider",
+                                service.status === 'ACTIVE' 
+                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+                                  : "bg-slate-100 text-slate-500 border border-slate-200"
+                              )}>
+                                {service.status} ({service.subState})
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
             {/* Tableau Legend Footer (Simplified to Active, Busy, Down) */}
             <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-wrap items-center justify-center gap-8 text-xs font-bold text-slate-500">
               <div className="flex items-center gap-2">
                 {renderStatusBadge('ACTIVE')}
-                <span>Active</span>
+                <span>Active / Operational</span>
               </div>
               <div className="flex items-center gap-2">
                 {renderStatusBadge('BUSY')}
-                <span>Busy</span>
+                <span>Busy / Re-indexing</span>
               </div>
               <div className="flex items-center gap-2">
                 {renderStatusBadge('DOWN')}
-                <span>Down</span>
+                <span>Offline / Error</span>
               </div>
             </div>
 

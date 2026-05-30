@@ -43,6 +43,7 @@ services:
       - .env
     volumes:
       - .env:/app/.env
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "4000:3000"
 
