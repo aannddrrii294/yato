@@ -233,6 +233,8 @@ model Credential {
   metadata    Json?    // Stores custom field values
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model AuditLog {
@@ -259,6 +261,8 @@ model ApiToken {
   token     String   @unique
   expiresAt DateTime?
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model LoginHistory {
@@ -268,6 +272,8 @@ model LoginHistory {
   ipAddress String
   userAgent String
   timestamp DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Catalog {
@@ -325,6 +331,12 @@ model TicketComment {
 
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @default(now()) @updatedAt
+
+  @@index([authorId])
+  @@index([vmRequestId])
+  @@index([serviceRequestId])
+  @@index([supportTicketId])
+  @@index([parentId])
 }
 
 model Otp {
@@ -450,6 +462,10 @@ model TaskComment {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([authorId])
+  @@index([parentId])
 }
 
 model TaskTemplate {
@@ -602,6 +618,8 @@ model TimesheetLog {
   location    String?
   device      String?
   createdAt   DateTime  @default(now())
+
+  @@index([timesheetId])
 }
 
 // Audit Log Koreksi Absensi Manual oleh Admin
@@ -615,6 +633,9 @@ model AttendanceAdjustmentLog {
   changedTo   String    // Jam setelah koreksi
   reason      String    // Alasan manual adjustment
   createdAt   DateTime  @default(now())
+
+  @@index([timesheetId])
+  @@index([adminId])
 }
 
 // Pengajuan Lembur (Overtime)
@@ -630,6 +651,8 @@ model Overtime {
   notes       String?   // Catatan persetujuan / penolakan
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([timesheetId])
 }
 
 // Pengajuan Cuti (Mendukung Multi-Level Approval)
@@ -666,6 +689,7 @@ model LeaveApproval {
   updatedAt      DateTime     @updatedAt
 
   @@unique([leaveRequestId, level])
+  @@index([leaveRequestId])
 }
 
 // Kuota Cuti Karyawan (Leave Balance)
