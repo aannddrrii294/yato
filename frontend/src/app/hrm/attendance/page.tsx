@@ -143,6 +143,23 @@ export default function AttendancePage() {
     return nameMatch || emailMatch || divisionMatch;
   });
 
+  // Calculate Weekly and Monthly worked hours
+  const startOfWeek = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(d.setDate(diff));
+    start.setHours(0, 0, 0, 0);
+    return start;
+  })();
+
+  const weeklyHours = timesheets
+    .filter((t: any) => new Date(t.date) >= startOfWeek)
+    .reduce((acc: number, t: any) => acc + (t.totalHours || 0), 0);
+
+  const monthlyHours = timesheets
+    .reduce((acc: number, t: any) => acc + (t.totalHours || 0), 0);
+
   const totalEmployees = adminAttendance.length;
   const presentEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "PRESENT").length;
   const lateEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "LATE").length;
@@ -217,14 +234,28 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-                <div className="bg-emerald-50/50 p-3 rounded-2xl">
-                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <div className="glass-card p-6 flex flex-col justify-between border border-slate-100/80 shadow-sm min-h-[96px]">
+                <div className="flex items-center gap-4 mb-2.5">
+                  <div className="bg-emerald-50/50 p-2.5 rounded-xl">
+                    <CheckCircle2 className="w-5.5 h-5.5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time Summary</div>
+                    <div className="text-xs font-bold text-slate-500">Hours Logged</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Working Hours</div>
-                  <div className="text-sm font-bold text-slate-850 mt-0.5">
-                    {todayTimesheet ? `${todayTimesheet.totalHours} Hours Logged` : "0.0 Hours"}
+                <div className="grid grid-cols-3 gap-2 border-t border-slate-100/65 pt-2.5 text-center">
+                  <div>
+                    <div className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Daily</div>
+                    <div className="text-[13px] font-extrabold text-slate-800 mt-0.5">{todayTimesheet ? todayTimesheet.totalHours.toFixed(1) : "0.0"}h</div>
+                  </div>
+                  <div className="border-l border-r border-slate-100">
+                    <div className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Weekly</div>
+                    <div className="text-[13px] font-extrabold text-slate-800 mt-0.5">{weeklyHours.toFixed(1)}h</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Monthly</div>
+                    <div className="text-[13px] font-extrabold text-slate-800 mt-0.5">{monthlyHours.toFixed(1)}h</div>
                   </div>
                 </div>
               </div>
@@ -276,7 +307,7 @@ export default function AttendancePage() {
                         disabled={clockInMutation.isPending}
                         className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-blue-500/10 cursor-pointer"
                       >
-                        {clockInMutation.isPending ? "Clocking In..." : "🚀 CLOCK IN (PRESENT)"}
+                        {clockInMutation.isPending ? "Checking In..." : "🚀 CHECK IN (PRESENT)"}
                       </button>
                     ) : !todayTimesheet.logs.find((l: any) => l.type === "CHECK_OUT") ? (
                       <div className="space-y-3">
@@ -292,7 +323,7 @@ export default function AttendancePage() {
                           disabled={clockOutMutation.isPending}
                           className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-amber-500/10 cursor-pointer"
                         >
-                          {clockOutMutation.isPending ? "Clocking Out..." : "🏁 CLOCK OUT"}
+                          {clockOutMutation.isPending ? "Checking Out..." : "🏁 CHECK OUT"}
                         </button>
                       </div>
                     ) : (

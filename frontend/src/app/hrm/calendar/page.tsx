@@ -54,10 +54,10 @@ export default function CalendarPage() {
     onSuccess: () => {
       refetchTimesheets();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
-      alert("Successfully clocked in!");
+      alert("Successfully checked in!");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.message || err.message || "Failed to clock in";
+      const msg = err.response?.data?.message || err.message || "Failed to check in";
       alert(msg);
     }
   });
@@ -70,10 +70,10 @@ export default function CalendarPage() {
     onSuccess: () => {
       refetchTimesheets();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
-      alert("Successfully clocked out!");
+      alert("Successfully checked out!");
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.message || err.message || "Failed to clock out";
+      const msg = err.response?.data?.message || err.message || "Failed to check out";
       alert(msg);
     }
   });
