@@ -144,7 +144,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         { icon: Clock, label: "Attendance Control", href: "/hrm/attendance", permission: "VIEW_HRM" },
         { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar", permission: "VIEW_HRM" },
         { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves", permission: "VIEW_HRM" },
-        { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
+        // { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
       ]
     },
     {
