@@ -85,7 +85,7 @@ export default function VmRequestPage() {
           </Link>
 
           <div className="mb-2">
-            <PageHeader title="Provision Instance" subtitle="Deploy new infrastructure resource" />
+            <PageHeader title="Request New VirtualMachine" subtitle="Deploy new infrastructure resource" />
           </div>
         </header>
 

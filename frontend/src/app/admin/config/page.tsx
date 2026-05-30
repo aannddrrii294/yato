@@ -2377,7 +2377,7 @@ export default function SystemConfigPage() {
                   />
                 </div>
 
-                {(newCatalog.category === "IDENTITY_TYPE" || newCatalog.category === "PHYSICAL_ASSET_TYPE") && (
+                {(newCatalog.category === "IDENTITY_TYPE" || newCatalog.category === "PHYSICAL_ASSET_TYPE" || newCatalog.category === "SERVICE_TYPE") && (
                   <div className="space-y-3 pt-4 border-t border-slate-100">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">Dynamic Custom Fields</label>
@@ -2391,7 +2391,7 @@ export default function SystemConfigPage() {
                     
                     {(!newCatalog.metadata?.customFields || newCatalog.metadata.customFields.length === 0) && (
                       <p className="text-[11px] text-slate-400 font-medium p-3 bg-slate-50 rounded-xl text-center border border-slate-100 border-dashed">
-                        No custom fields defined. Credential will only use basic fields (Name, Address, Secret).
+                        No custom fields defined. This item will only use default basic fields.
                       </p>
                     )}
 
