@@ -841,53 +841,7 @@ export default function CredentialsPage() {
                     </div>
                   ))}
 
-                  <div className="flex items-center justify-between p-5 bg-indigo-50/30 rounded-2xl border border-indigo-100 group">
-                    <div className="flex-1">
-                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Secure Secret</p>
-                      <p className="text-sm font-mono font-bold text-slate-900 break-all pr-4">
-                        {showPassInDetail && secretVerified ? selectedCred.password : "••••••••••••••••••••••••"}
-                      </p>
-                      {!secretVerified && (
-                        <p className="text-[9px] text-amber-600 font-semibold mt-1.5 flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Re-authentication required to reveal
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => {
-                          if (showPassInDetail && secretVerified) {
-                            // Already revealed, just toggle hide
-                            setShowPassInDetail(false);
-                          } else {
-                            // Need password verification
-                            setPendingRevealCredId(selectedCred.id);
-                            setVerifyPassword("");
-                            setVerifyError("");
-                            setIsVerifyModalOpen(true);
-                          }
-                        }}
-                        className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm"
-                      >
-                        {showPassInDetail && secretVerified ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (!secretVerified) {
-                            setPendingRevealCredId(selectedCred.id);
-                            setVerifyPassword("");
-                            setVerifyError("");
-                            setIsVerifyModalOpen(true);
-                            return;
-                          }
-                          handleCopy(selectedCred.password || "", 'password');
-                        }}
-                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all shadow-sm"
-                      >
-                        {copiedField === 'password' ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Secure Secret section removed as custom/dynamic fields are used for credential values */}
                 </div>
                 
                 <div className="pt-4">
