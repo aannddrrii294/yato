@@ -336,8 +336,7 @@ export class SystemConfigService {
         { name: 'YATO-BACKEND', port: 3000, serviceName: 'backend', type: 'TCP' },
         { name: 'YATO-POSTGRES', port: 5432, serviceName: 'postgres', type: 'TCP' },
         { name: 'YATO-REDIS', port: 6379, serviceName: 'redis', type: 'TCP' },
-        { name: 'YATO-NGINX', port: 9090, serviceName: 'nginx', type: 'HTTP' },
-        { name: 'YATO-PLUGIN-PROXMOX', port: 5001, serviceName: 'yato-plugin-proxmox', type: 'TCP' }
+        { name: 'YATO-NGINX', port: 9090, serviceName: 'nginx', type: 'HTTP' }
       ];
 
       dockerContainers = await Promise.all(
@@ -345,7 +344,7 @@ export class SystemConfigService {
           // Check inside docker network by service host name
           const isUp = c.type === 'HTTP' 
             ? await isUrlHealthy(`http://${c.serviceName}:3000`) // internal port
-            : await isPortOpen(c.serviceName, c.port === 5432 ? 5432 : c.port === 6379 ? 6379 : c.port === 5001 ? 5001 : 3000);
+            : await isPortOpen(c.serviceName, c.port === 5432 ? 5432 : c.port === 6379 ? 6379 : 3000);
           return {
             name: c.name,
             image: `yato/${c.serviceName.toLowerCase()}:latest`,

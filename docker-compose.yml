@@ -61,17 +61,6 @@ services:
     ports:
       - "4001:3000"
 
-  yato-plugin-proxmox:
-    build:
-      context: ./plugins/proxmox-mock
-      dockerfile: Dockerfile
-    container_name: yato-plugin-proxmox
-    restart: always
-    environment:
-      TZ: ${TZ:-UTC}
-    ports:
-      - "5010:5001"
-
   nginx:
     image: nginx:alpine
     container_name: yato-nginx
