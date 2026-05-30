@@ -371,28 +371,24 @@ export default function CredentialsPage() {
           </div>
         </div>
 
-        {/* Identity Type Tabs Filter */}
-        <div className="flex flex-wrap items-center gap-1.5 mb-8 bg-slate-50 border border-slate-100 p-1.5 rounded-[1.5rem] shadow-sm max-w-max">
-          {["All", ...(identityTypes?.map((t: any) => t.value) || [])].map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => {
-                  setActiveTab(tab);
-                  setCurrentPage(1);
-                }}
-                className={cn(
-                  "px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer",
-                  isActive 
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/10" 
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
-                )}
-              >
-                {tab === "All" ? "All Identity Types" : tab}
-              </button>
-            );
-          })}
+        {/* Identity Type Dropdown Filter */}
+        <div className="relative shrink-0 mb-8 max-w-max">
+          <select
+            className="bg-slate-50 hover:bg-slate-100/50 border border-slate-200/80 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all cursor-pointer appearance-none pr-10 text-slate-700 shadow-sm"
+            value={activeTab}
+            onChange={(e) => {
+              setActiveTab(e.target.value);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="All">All Identity Types</option>
+            {identityTypes?.map((t: any) => (
+              <option key={t.id} value={t.value}>{t.value}</option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <ChevronDown className="w-4 h-4" />
+          </div>
         </div>
 
         <div className="bg-white border border-slate-50 rounded-2xl overflow-visible shadow-sm">
