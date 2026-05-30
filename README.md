@@ -283,6 +283,40 @@ Open browser at [http://localhost:3000](http://localhost:3000).
 
 ---
 
+### Option C: Standalone Production Systemd Deployment (Without Docker)
+This pipeline installs local system prerequisites, builds production packages, and deploys both backend and frontend as persistent OS-level **systemd** services.
+
+1. **Make installer executable:**
+   ```bash
+   chmod +x installer.sh
+   ```
+
+2. **Run the Standalone Installer:**
+   ```bash
+   ./installer.sh --infra-mode standalone
+   ```
+   *This script detects your Linux package manager (e.g. `apt-get` on Debian/Ubuntu), automatically configures and runs PostgreSQL, Redis, Node.js, applies migrations/seeds, compiles both Next.js/NestJS platforms, and registers standard systemd services.*
+
+3. **Manage the Systemd Services:**
+   You can easily monitor and control the platform services using standard `systemctl` commands:
+   ```bash
+   # Check service health
+   sudo systemctl status yato-backend
+   sudo systemctl status yato-frontend
+
+   # Restart services
+   sudo systemctl restart yato-backend yato-frontend
+
+   # Stop services
+   sudo systemctl stop yato-backend yato-frontend
+
+   # View live daemon logs
+   sudo journalctl -u yato-backend -f
+   sudo journalctl -u yato-frontend -f
+   ```
+
+---
+
 ## 🚀 Post-Installation Network Access Details
 
 Once the platform is bootstrapped, use the target routing endpoints below:
