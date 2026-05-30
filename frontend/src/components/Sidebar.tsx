@@ -136,15 +136,10 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "VIEW_DASHBOARD" },
         { icon: Ticket, label: "Support Tickets", href: "/tickets", permission: "VIEW_SUPPORT_TICKETS" },
         { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
-      ]
-    },
-    {
-      title: "HR Management",
-      items: [
         { icon: Clock, label: "Attendance Terminal", href: "/hrm/attendance" },
         { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar" },
         { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves" },
-        // { icon: ArrowLeftRight, label: "Shift Trades", href: "/hrm/shifts", permission: "VIEW_HRM" },
+        { icon: HardDrive, label: "File Manager", href: "/files" },
       ]
     },
     {
@@ -166,12 +161,11 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
       ]
     },
     {
-      title: "Management",
+      title: "Infra Management",
       items: [
         { icon: Server, label: "VM Inventory", href: "/admin/vm-inventory", permission: "MANAGE_VM_INVENTORY" },
         { icon: Layers, label: "Service Assets Inventory", href: "/admin/service-inventory", permission: "MANAGE_SERVICE_INVENTORY" },
         { icon: QrCode, label: "Asset Registry", href: "/assets", permission: "VIEW_ASSETS" },
-        { icon: HardDrive, label: "File Manager", href: "/files" },
       ]
     },
     {
