@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const getFormattedDate = (date: any) => {
   if (!date) return "";
@@ -42,6 +43,7 @@ const getFormattedDate = (date: any) => {
 };
 
 export default function AttendancePage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [workNotes, setWorkNotes] = useState("");
@@ -186,6 +188,10 @@ export default function AttendancePage() {
   const absentEmployees = totalEmployees - presentEmployees - lateEmployees;
 
   const handleTabChange = (tab: "terminal" | "calendar" | "admin") => {
+    if (tab === "admin") {
+      router.push("/hrm/admin-panel");
+      return;
+    }
     setActiveTab(tab);
     if (tab === "terminal") {
       setCalendarYear(new Date().getFullYear());

@@ -153,7 +153,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
       ]
     },
     {
-      title: "HR Administration",
+      title: "Management Admin",
       items: [
         { icon: Shield, label: "Management Admin Panel", href: "/hrm/admin-panel", permission: "MANAGE_HRM" },
         { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM" },

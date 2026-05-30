@@ -23,7 +23,7 @@ const enToId: Record<string, string> = {
   "calendar timesheets": "kalender jadwal kerja",
   "leave hub": "pusat cuti",
   "file manager": "pengelola berkas",
-  "hr administration": "administrasi sdm",
+  "management admin": "manajemen admin",
   "management admin panel": "panel admin manajemen",
   "division mappings": "pemetaan divisi",
   "shift scheduler": "penjadwal shift",
