@@ -93,7 +93,7 @@ export default function VmRequestPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="glass-card space-y-10">
               {/* Primary Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 gap-10">
                 <div className="space-y-2">
                   <label className="text-slate-500 font-bold uppercase tracking-wider">Hostname / Instance Name</label>
                   <div className="relative group">
@@ -106,24 +106,6 @@ export default function VmRequestPage() {
                       value={formData.hostname}
                       onChange={e => setFormData({...formData, hostname: e.target.value})}
                     />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-slate-500 font-bold uppercase tracking-wider">Target Infrastructure</label>
-                  <div className="relative group">
-                    <Server className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                    <select 
-                      className="input-field pl-12 w-full appearance-none bg-white"
-                      value={formData.hypervisor}
-                      onChange={e => setFormData({...formData, hypervisor: e.target.value})}
-                    >
-                      <option value="manual">Manual / Pending Integration</option>
-                      <option value="proxmox-ve">Proxmox VE</option>
-                      <option value="vmware-vsphere">VMware vSphere</option>
-                      <option value="openstack">OpenStack</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
               </div>

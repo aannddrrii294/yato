@@ -168,15 +168,7 @@ export class VmRequestService {
     });
 
     // Check if automated provisioning is enabled
-    const autoProv = await this.prisma.systemSetting.findUnique({ 
-      where: { key: 'AUTOMATED_PROVISIONING_ENABLED' } 
-    });
-    
-    const isAutoEnabled = autoProv 
-      ? (typeof autoProv.value === 'object' && autoProv.value !== null && 'enabled' in (autoProv.value as any))
-        ? (autoProv.value as any).enabled
-        : !!autoProv.value
-      : true;
+    const isAutoEnabled = false;
 
     // Create Inventory Entry
     await this.prisma.vMInventory.create({

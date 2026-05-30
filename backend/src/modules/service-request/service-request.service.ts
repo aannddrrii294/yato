@@ -165,10 +165,7 @@ export class ServiceRequestService {
     });
 
     // Check if automated provisioning is enabled
-    const autoProv = await this.prisma.systemSetting.findUnique({ 
-      where: { key: 'AUTOMATED_PROVISIONING_ENABLED' } 
-    });
-    const isAutoEnabled = autoProv ? (autoProv.value as any).enabled : true;
+    const isAutoEnabled = false;
 
     // Create Inventory Entry
     await this.prisma.serviceInventory.create({

@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 
 export default function SystemConfigPage() {
   const { refreshBranding } = useBranding();
-  const [activeTab, setActiveTab] = useState<"notifications" | "identity" | "database" | "catalogs" | "orchestration" | "api-portal" | "tuning" | "hrm-security">("notifications");
+  const [activeTab, setActiveTab] = useState<"notifications" | "identity" | "database" | "catalogs" | "api-portal" | "tuning" | "hrm-security">("notifications");
   const [isAddCatalogModalOpen, setIsAddCatalogModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -565,13 +565,6 @@ export default function SystemConfigPage() {
           >
             <List className="w-4 h-4" />
             Resource Catalogs
-          </button>
-          <button 
-            onClick={() => setActiveTab('orchestration')}
-            className={cn("px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2", activeTab === 'orchestration' ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:text-slate-900 hover:bg-white")}
-          >
-            <Zap className="w-4 h-4" />
-            Orchestration
           </button>
           <button 
             onClick={() => setActiveTab('api-portal')}
@@ -1817,52 +1810,7 @@ export default function SystemConfigPage() {
           </div>
         </div>
         )}
-        {activeTab === 'orchestration' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
-            <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-5 h-5 text-amber-500" />
-              <h2 className="text-sm font-bold text-slate-900">Provisioning Orchestration</h2>
-            </div>
-            <div className="space-y-8">
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="max-w-[70%]">
-                  <h3 className="text-xs font-bold text-slate-900 mb-1">Automated Provisioning Integration</h3>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    When enabled, approved VM requests will be automatically sent to the provisioning queue for hypervisor execution. 
-                    Disable this if you prefer manual VM creation.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setAutoProvisioning(!autoProvisioning)}
-                  className={cn(
-                    "w-14 h-7 rounded-full relative transition-all duration-300 shadow-inner",
-                    autoProvisioning ? "bg-blue-600" : "bg-slate-300"
-                  )}
-                >
-                  <div className={cn(
-                    "absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform shadow-md",
-                    autoProvisioning ? "translate-x-7" : "translate-x-0"
-                  )} />
-                </button>
-              </div>
 
-              <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex gap-4">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                  <Monitor className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-blue-900 uppercase">Provider Status</p>
-                  <p className="text-[11px] text-blue-700/80 font-medium leading-relaxed">
-                    Provider: <span className="font-bold">Built-in Simulation</span><br/>
-                    Status: <span className="text-emerald-600 font-bold">READY</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-        )}
 
         {activeTab === 'api-portal' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
