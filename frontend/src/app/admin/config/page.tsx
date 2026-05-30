@@ -50,6 +50,7 @@ export default function SystemConfigPage() {
   const [officeIpEnabled, setOfficeIpEnabled] = useState<boolean>(false);
   const [officeIpWhitelist, setOfficeIpWhitelist] = useState<string>("127.0.0.1, 192.168.201.18");
   const [detectedIp, setDetectedIp] = useState<string>("");
+  const [sessionTimeout, setSessionTimeout] = useState<string>("15");
 
 
   const [catalogs, setCatalogs] = useState<any[]>([]);
@@ -295,6 +296,9 @@ export default function SystemConfigPage() {
       if (settings.office_ip_whitelist !== undefined) {
         setOfficeIpWhitelist(settings.office_ip_whitelist);
       }
+      if (settings.SESSION_TIMEOUT !== undefined) {
+        setSessionTimeout(String(settings.SESSION_TIMEOUT));
+      }
       if (settings.BRANDING_CONFIG) {
         setBrandingConfig(prev => ({
           ...prev,
@@ -388,7 +392,8 @@ export default function SystemConfigPage() {
         BRANDING_CONFIG: brandingConfig,
         NOTIFICATION_ROUTING_RULES: routingRules,
         office_ip_enabled: officeIpEnabled ? "true" : "false",
-        office_ip_whitelist: officeIpWhitelist
+        office_ip_whitelist: officeIpWhitelist,
+        SESSION_TIMEOUT: sessionTimeout
       });
       setSaveStatus("success");
       // Instantly apply branding across sidebar, header, browser title, and favicon!
@@ -2243,6 +2248,30 @@ export default function SystemConfigPage() {
                   />
                   <p className="text-[10px] text-slate-400 font-medium px-1 leading-relaxed">
                     Provide a comma-separated list of your corporate network's public IP addresses. When whitelisting is enabled, all Clock-in/out attempts from unlisted IPs will be automatically blocked.
+                  </p>
+                </div>
+
+                {/* Session Timeout Select */}
+                <div className="space-y-2 pt-4 border-t border-slate-100">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Platform Session Timeout (Auto Logout)</span>
+                  </label>
+                  <select 
+                    className="input-field w-full bg-slate-50"
+                    value={sessionTimeout}
+                    onChange={e => setSessionTimeout(e.target.value)}
+                  >
+                    <option value="15">15 Minutes (Default / Recommended)</option>
+                    <option value="30">30 Minutes</option>
+                    <option value="60">1 Hour</option>
+                    <option value="240">4 Hours</option>
+                    <option value="480">8 Hours</option>
+                    <option value="1440">1 Day</option>
+                    <option value="10080">7 Days</option>
+                  </select>
+                  <p className="text-[10px] text-slate-400 font-medium px-1 leading-relaxed">
+                    Set the duration of inactivity before users are automatically logged out of their sessions to protect administrative data.
                   </p>
                 </div>
 

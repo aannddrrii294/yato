@@ -265,10 +265,29 @@ export class AuthService {
 
   async generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email };
+    
+    // Fetch custom session timeout from system settings
+    let sessionTimeout = '15m';
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'SESSION_TIMEOUT' }
+      });
+      if (setting && setting.value) {
+        const val = typeof setting.value === 'string' ? setting.value : String(setting.value);
+        if (/^\d+$/.test(val)) {
+          sessionTimeout = `${val}m`;
+        } else {
+          sessionTimeout = val;
+        }
+      }
+    } catch (e) {
+      // Fallback to 15m
+    }
+
     return {
       access_token: this.jwtService.sign(payload, {
         secret: this.configService.get('JWT_SECRET'),
-        expiresIn: '15m',
+        expiresIn: sessionTimeout,
       }),
       refresh_token: this.jwtService.sign(payload, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
