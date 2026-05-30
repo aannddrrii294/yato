@@ -130,7 +130,7 @@ export class HrmService {
       select: { divisionId: true },
     });
 
-    const assignedShift = await this.prisma.workShift.findFirst({
+    let assignedShift = await this.prisma.workShift.findFirst({
       where: {
         userId,
         date: {
@@ -142,7 +142,35 @@ export class HrmService {
     });
 
     if (!assignedShift) {
-      throw new BadRequestException('Clock-in failed: No shift scheduled for you today.');
+      const defaultCategory = await this.prisma.shiftCategory.findFirst();
+      if (defaultCategory) {
+        assignedShift = {
+          id: "temp-shift",
+          userId,
+          date: now,
+          shiftCategoryId: defaultCategory.id,
+          shiftCategory: defaultCategory,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any;
+      } else {
+        assignedShift = {
+          id: "temp-shift",
+          userId,
+          date: now,
+          shiftCategoryId: "default-id",
+          shiftCategory: {
+            id: "default-id",
+            name: "General Shift",
+            startTime: "08:00",
+            endTime: "17:00",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any;
+      }
     }
 
     // 3. Detect lateness
