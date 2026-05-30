@@ -24,6 +24,7 @@ export default function ShiftSchedulerPage() {
   const queryClient = useQueryClient();
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [editShiftCategoryId, setEditShiftCategoryId] = useState<string | null>(null);
 
   // Form states
   const [shiftForm, setShiftForm] = useState({
@@ -91,6 +92,57 @@ export default function ShiftSchedulerPage() {
     },
   });
 
+  // Update shift category mutation
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: typeof shiftForm }) => {
+      const res = await api.patch(`/hrm/shifts/categories/${id}`, {
+        name: payload.name,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        breakStart: payload.breakStart,
+        breakEnd: payload.breakEnd,
+        colorCode: payload.colorCode,
+        description: payload.description,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      setShowShiftModal(false);
+      setEditShiftCategoryId(null);
+      setShiftForm({
+        name: "",
+        startTime: "09:00",
+        endTime: "18:00",
+        breakStart: "12:00",
+        breakEnd: "13:00",
+        colorCode: "#3b82f6",
+        description: "",
+      });
+      alert("Shift category updated successfully!");
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || "Failed to update shift category";
+      alert(msg);
+    }
+  });
+
+  // Delete shift category mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.delete(`/hrm/shifts/categories/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      alert("Shift category deleted successfully!");
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || "Failed to delete shift category";
+      alert(msg);
+    }
+  });
+
   // Assign shift mutation
   const assignShiftMutation = useMutation({
     mutationFn: async (payload: typeof assignForm) => {
@@ -105,10 +157,34 @@ export default function ShiftSchedulerPage() {
     },
   });
 
+  const handleEditClick = (cat: any) => {
+    setEditShiftCategoryId(cat.id);
+    setShiftForm({
+      name: cat.name,
+      startTime: cat.startTime,
+      endTime: cat.endTime,
+      breakStart: cat.breakStart,
+      breakEnd: cat.breakEnd,
+      colorCode: cat.colorCode || "#3b82f6",
+      description: cat.description || "",
+    });
+    setShowShiftModal(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    if (confirm("Are you sure you want to delete this shift category? This will also unassign this shift from any scheduled employees.")) {
+      deleteCategoryMutation.mutate(id);
+    }
+  };
+
   const handleCreateShift = (e: React.FormEvent) => {
     e.preventDefault();
     if (!shiftForm.name.trim()) return;
-    createCategoryMutation.mutate(shiftForm);
+    if (editShiftCategoryId) {
+      updateCategoryMutation.mutate({ id: editShiftCategoryId, payload: shiftForm });
+    } else {
+      createCategoryMutation.mutate(shiftForm);
+    }
   };
 
   const handleAssignShift = (e: React.FormEvent) => {
@@ -133,7 +209,19 @@ export default function ShiftSchedulerPage() {
 
           <div className="flex gap-3">
             <button
-              onClick={() => setShowShiftModal(true)}
+              onClick={() => {
+                setEditShiftCategoryId(null);
+                setShiftForm({
+                  name: "",
+                  startTime: "09:00",
+                  endTime: "18:00",
+                  breakStart: "12:00",
+                  breakEnd: "13:00",
+                  colorCode: "#3b82f6",
+                  description: "",
+                });
+                setShowShiftModal(true);
+              }}
               className="btn-secondary flex items-center gap-2 py-3 px-5 text-xs font-bold uppercase bg-white border border-slate-200 text-slate-700 rounded-2xl shadow-sm hover:bg-slate-50 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 text-blue-600" /> New Shift Code
@@ -164,6 +252,26 @@ export default function ShiftSchedulerPage() {
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.colorCode || '#3b82f6' }} />
                       <span className="font-extrabold text-slate-850 text-sm tracking-tight">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEditClick(cat)}
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                        title="Edit Shift"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(cat.id)}
+                        className="p-1.5 bg-slate-50 hover:bg-red-50 rounded-lg text-slate-500 hover:text-red-650 transition-colors cursor-pointer"
+                        title="Delete Shift"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
@@ -205,7 +313,9 @@ export default function ShiftSchedulerPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-extrabold text-slate-800 text-sm tracking-tight">Create Shift Code</h3>
+                    <h3 className="font-extrabold text-slate-800 text-sm tracking-tight">
+                      {editShiftCategoryId ? "Edit Shift Code" : "Create Shift Code"}
+                    </h3>
                   </div>
                   <button
                     onClick={() => setShowShiftModal(false)}
@@ -308,10 +418,14 @@ export default function ShiftSchedulerPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={createCategoryMutation.isPending}
+                      disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
                       className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-blue-500/10 active:scale-[0.98] transition-all cursor-pointer"
                     >
-                      {createCategoryMutation.isPending ? "Creating..." : "Save Shift Code"}
+                      {createCategoryMutation.isPending || updateCategoryMutation.isPending
+                        ? "Saving..."
+                        : editShiftCategoryId
+                        ? "Update Shift Code"
+                        : "Save Shift Code"}
                     </button>
                   </div>
                 </form>

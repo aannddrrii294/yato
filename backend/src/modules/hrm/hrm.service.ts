@@ -51,6 +51,31 @@ export class HrmService {
     return this.prisma.shiftCategory.create({ data });
   }
 
+  async updateShiftCategory(id: string, data: {
+    name?: string;
+    startTime?: string;
+    endTime?: string;
+    breakStart?: string;
+    breakEnd?: string;
+    colorCode?: string;
+    description?: string;
+  }) {
+    return this.prisma.shiftCategory.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteShiftCategory(id: string) {
+    // Delete all work shifts using this shift category
+    await this.prisma.workShift.deleteMany({
+      where: { shiftCategoryId: id },
+    });
+    return this.prisma.shiftCategory.delete({
+      where: { id },
+    });
+  }
+
   async assignShift(data: { userId: string; shiftCategoryId: string; date: string; notes?: string }) {
     const shiftDate = new Date(data.date);
     // Set to midnight UTC/local to ensure date matching is consistent

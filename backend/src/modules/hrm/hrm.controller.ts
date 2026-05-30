@@ -54,6 +54,26 @@ export class HrmController {
     return this.hrmService.createShiftCategory(dto);
   }
 
+  @Patch('shifts/categories/:id')
+  @ApiOperation({ summary: 'Update shift category' })
+  async updateShiftCategory(@Param('id') id: string, @Body() dto: {
+    name?: string;
+    startTime?: string;
+    endTime?: string;
+    breakStart?: string;
+    breakEnd?: string;
+    colorCode?: string;
+    description?: string;
+  }) {
+    return this.hrmService.updateShiftCategory(id, dto);
+  }
+
+  @Delete('shifts/categories/:id')
+  @ApiOperation({ summary: 'Delete shift category' })
+  async deleteShiftCategory(@Param('id') id: string) {
+    return this.hrmService.deleteShiftCategory(id);
+  }
+
   @Post('shifts/assign')
   @ApiOperation({ summary: 'Assign a shift to a user' })
   async assignShift(@Body() dto: { userId: string; shiftCategoryId: string; date: string; notes?: string }) {
