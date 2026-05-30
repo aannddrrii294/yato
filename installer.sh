@@ -125,15 +125,113 @@ if [ "$INFRA_MODE" = "docker" ]; then
         $DOCKER_COMPOSE exec -T backend npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts
     fi
 else
-    echo -e "${YELLOW}🏗️  Standalone installation mode detected...${NC}"
-    # This section would contain apt-get/yum commands for native install
-    echo -e "${RED}Note: Standalone native scripts require specific OS support (Ubuntu/Debian).${NC}"
-    
-    if [ "$COMP_DB" = true ]; then
-        echo "Installing PostgreSQL locally..."
-        # sudo apt-get install -y postgresql
+    echo -e "${YELLOW}🏗️  Standalone Systemd installation mode active...${NC}"
+    echo -e "${YELLOW}🔍 Checking systemd availability...${NC}"
+    if ! command -v systemctl >/dev/null 2>&1; then
+        echo -e "${RED}Error: systemctl is not available. Systemd mode requires systemd support.${NC}"
+        exit 1
     fi
-    # ... more standalone logic ...
+
+    # Detect distribution
+    PKG_MANAGER=""
+    if [ -f /etc/debian_version ]; then
+        PKG_MANAGER="apt-get"
+    elif [ -f /etc/redhat-release ]; then
+        PKG_MANAGER="yum"
+    else
+        echo -e "${RED}Warning: Unsupported OS distribution. Continuing manual dependency checks...${NC}"
+    fi
+
+    # 1. Install prerequisites if needed
+    if [ "$PKG_MANAGER" = "apt-get" ]; then
+        echo -e "   • Updating apt package indexes..."
+        sudo apt-get update -y &>/dev/null
+        
+        if [ "$COMP_DB" = true ] && ! command -v psql >/dev/null 2>&1; then
+            echo -e "   • Installing PostgreSQL..."
+            sudo apt-get install -y postgresql postgresql-contrib &>/dev/null
+            sudo systemctl enable --now postgresql
+        fi
+        
+        if [ "$COMP_REDIS" = true ] && ! command -v redis-server >/dev/null 2>&1; then
+            echo -e "   • Installing Redis server..."
+            sudo apt-get install -y redis-server &>/dev/null
+            sudo systemctl enable --now redis-server
+        fi
+
+        if ! command -v node >/dev/null 2>&1; then
+            echo -e "   • Installing Node.js & npm..."
+            sudo apt-get install -y nodejs npm &>/dev/null
+        fi
+    fi
+
+    # 2. Build backend
+    if [ "$COMP_APP" = true ]; then
+        echo -e "${YELLOW}📦 Building Backend Service...${NC}"
+        cd backend
+        npm install
+        npx prisma generate
+        npx prisma migrate deploy || true
+        npx prisma db push --accept-data-loss
+        npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed.ts || true
+        npm run build
+        cd ..
+
+        # Generate Backend Systemd Service file
+        echo -e "   • Generating yato-backend.service..."
+        CURRENT_DIR=$(pwd)
+        cat <<EOF | sudo tee /etc/systemd/system/yato-backend.service >/dev/null
+[Unit]
+Description=YATO Backend Service
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$CURRENT_DIR/backend
+ExecStart=/usr/bin/npm run start:prod
+Restart=always
+Environment=NODE_ENV=production
+EnvironmentFile=$CURRENT_DIR/.env
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now yato-backend
+    fi
+
+    # 3. Build frontend
+    if [ "$COMP_WEB" = true ]; then
+        echo -e "${YELLOW}📦 Building Frontend Service...${NC}"
+        cd frontend
+        npm install
+        npm run build
+        cd ..
+
+        # Generate Frontend Systemd Service file
+        echo -e "   • Generating yato-frontend.service..."
+        CURRENT_DIR=$(pwd)
+        cat <<EOF | sudo tee /etc/systemd/system/yato-frontend.service >/dev/null
+[Unit]
+Description=YATO Frontend Service
+After=network.target yato-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$CURRENT_DIR/frontend
+ExecStart=/usr/bin/npm run start
+Restart=always
+Environment=NODE_ENV=production
+EnvironmentFile=$CURRENT_DIR/.env
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now yato-frontend
+    fi
 fi
 
 # Detailed Success & Access Information Display
