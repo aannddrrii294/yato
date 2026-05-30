@@ -13,8 +13,7 @@ export class TaskService {
   ) {}
 
   async findAll(user: any) {
-    const isAdmin = user.roles?.some((r: any) => r.role.name === 'ADMIN' || r.role.name === 'TASK_ADMIN');
-    const where = isAdmin ? {} : {
+    const where = {
       OR: [
         { createdById: user.id },
         { assignees: { some: { id: user.id } } },
@@ -139,12 +138,11 @@ export class TaskService {
     }
 
     if (user) {
-      const isAdmin = user.roles?.some((r: any) => r.role.name === 'ADMIN' || r.role.name === 'TASK_ADMIN');
       const isCreator = task.createdById === user.id;
       const isAssignee = task.assignees.some(a => a.id === user.id);
       const isFollower = task.followers.some(f => f.id === user.id);
 
-      if (!isAdmin && !isCreator && !isAssignee && !isFollower) {
+      if (!isCreator && !isAssignee && !isFollower) {
         throw new NotFoundException(`Task with ID ${id} not found`);
       }
     }
@@ -573,11 +571,14 @@ export class TaskService {
     });
   }
 
-  async findOneTemplate(id: string) {
+  async findOneTemplate(id: string, userId?: string) {
     const template = await this.prisma.taskTemplate.findUnique({
       where: { id },
     });
     if (!template) {
+      throw new NotFoundException(`Task template with ID ${id} not found`);
+    }
+    if (userId && template.createdById !== userId) {
       throw new NotFoundException(`Task template with ID ${id} not found`);
     }
     return template;
@@ -601,8 +602,8 @@ export class TaskService {
     });
   }
 
-  async updateTemplate(id: string, dto: UpdateTaskTemplateDto) {
-    await this.findOneTemplate(id);
+  async updateTemplate(id: string, dto: UpdateTaskTemplateDto, userId: string) {
+    await this.findOneTemplate(id, userId);
 
     const data: any = {};
     if (dto.templateName !== undefined) data.templateName = dto.templateName;
@@ -622,8 +623,8 @@ export class TaskService {
     });
   }
 
-  async deleteTemplate(id: string) {
-    await this.findOneTemplate(id);
+  async deleteTemplate(id: string, userId: string) {
+    await this.findOneTemplate(id, userId);
     return this.prisma.taskTemplate.delete({
       where: { id },
     });

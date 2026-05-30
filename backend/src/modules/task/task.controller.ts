@@ -25,8 +25,8 @@ export class TaskController {
 
   @Get('templates/:id')
   @ApiOperation({ summary: 'Fetch single task template' })
-  async findOneTemplate(@Param('id') id: string) {
-    return this.taskService.findOneTemplate(id);
+  async findOneTemplate(@Param('id') id: string, @Request() req: any) {
+    return this.taskService.findOneTemplate(id, req.user.id);
   }
 
   @Post('templates')
@@ -37,14 +37,14 @@ export class TaskController {
 
   @Patch('templates/:id')
   @ApiOperation({ summary: 'Update a task template' })
-  async updateTemplate(@Param('id') id: string, @Body() dto: UpdateTaskTemplateDto) {
-    return this.taskService.updateTemplate(id, dto);
+  async updateTemplate(@Param('id') id: string, @Body() dto: UpdateTaskTemplateDto, @Request() req: any) {
+    return this.taskService.updateTemplate(id, dto, req.user.id);
   }
 
   @Delete('templates/:id')
   @ApiOperation({ summary: 'Delete a task template' })
-  async deleteTemplate(@Param('id') id: string) {
-    return this.taskService.deleteTemplate(id);
+  async deleteTemplate(@Param('id') id: string, @Request() req: any) {
+    return this.taskService.deleteTemplate(id, req.user.id);
   }
 
   @Get(':id')
