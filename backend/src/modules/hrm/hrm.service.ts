@@ -417,10 +417,6 @@ export class HrmService {
       },
     });
 
-    if (!user.division) {
-      throw new BadRequestException('Approval Routing Failed: You are not assigned to any Division.');
-    }
-
     // 3. Create the Leave Request
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.leaveRequest.create({
@@ -437,31 +433,33 @@ export class HrmService {
       // 4. Seed approval steps based on division managers/supervisors
       const approvalsToCreate = [];
       
-      if (user.division.supervisorId) {
-        approvalsToCreate.push({
-          leaveRequestId: request.id,
-          level: 1,
-          roleName: 'SUPERVISOR',
-          status: 'PENDING',
-        });
-      }
+      if (user.division) {
+        if (user.division.supervisorId) {
+          approvalsToCreate.push({
+            leaveRequestId: request.id,
+            level: 1,
+            roleName: 'SUPERVISOR',
+            status: 'PENDING',
+          });
+        }
 
-      if (user.division.managerId) {
-        approvalsToCreate.push({
-          leaveRequestId: request.id,
-          level: 2,
-          roleName: 'MANAGER',
-          status: 'PENDING',
-        });
-      }
+        if (user.division.managerId) {
+          approvalsToCreate.push({
+            leaveRequestId: request.id,
+            level: 2,
+            roleName: 'MANAGER',
+            status: 'PENDING',
+          });
+        }
 
-      if (user.division.headId) {
-        approvalsToCreate.push({
-          leaveRequestId: request.id,
-          level: 3,
-          roleName: 'DEPT_HEAD',
-          status: 'PENDING',
-        });
+        if (user.division.headId) {
+          approvalsToCreate.push({
+            leaveRequestId: request.id,
+            level: 3,
+            roleName: 'DEPT_HEAD',
+            status: 'PENDING',
+          });
+        }
       }
 
       // If no supervisors/managers configured, auto-approve

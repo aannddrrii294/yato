@@ -21,7 +21,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -155,6 +156,39 @@ export default function AttendancePage() {
       notes: workNotes,
     });
     setWorkNotes("");
+  };
+
+  const exportUserTimesheetsToCSV = () => {
+    if (!timesheets || timesheets.length === 0) {
+      alert("No timesheet data available to export.");
+      return;
+    }
+
+    const headers = ["Date", "Status", "Total Hours", "Notes", "Logs (Type - Time - IP - Device)"];
+    const rows = timesheets.map((ts: any) => {
+      const formattedDate = new Date(ts.date).toLocaleDateString("en-GB");
+      const logsStr = ts.logs
+        ?.map((log: any) => `${log.type} (${new Date(log.timestamp).toLocaleTimeString("en-GB")} - ${log.ipAddress} - ${log.device})`)
+        .join(" | ") || "";
+      return [
+        formattedDate,
+        ts.status,
+        ts.totalHours,
+        ts.notes || "-",
+        `"${logsStr.replace(/"/g, '""')}"`
+      ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Timesheets_${calendarYear}_${calendarMonth}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Filtered employees for Admin View
@@ -482,7 +516,13 @@ export default function AttendancePage() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-4 text-xs font-bold">
+              <div className="flex flex-wrap gap-4 text-xs font-bold items-center">
+                <button
+                  onClick={exportUserTimesheetsToCSV}
+                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer border border-emerald-250 transition-all flex items-center gap-1.5 shadow-sm mr-2"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export CSV
+                </button>
                 <span className="flex items-center gap-2 text-blue-600">
                   <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> 
                   Present

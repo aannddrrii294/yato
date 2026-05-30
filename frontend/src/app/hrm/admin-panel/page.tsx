@@ -26,7 +26,8 @@ import {
   Edit2,
   Lock,
   ArrowRight,
-  Printer
+  Printer,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -213,6 +214,47 @@ function ManagementAdminPanelContent() {
     return nameMatch || emailMatch || divisionMatch;
   });
 
+  const exportAdminAttendanceToCSV = () => {
+    if (!filteredAttendance || filteredAttendance.length === 0) {
+      alert("No attendance data available to export.");
+      return;
+    }
+
+    const headers = ["Employee Name", "Email", "Division", "Status", "Check-In", "Check-Out", "IP Address", "Lateness Reason / Notes"];
+    const rows = filteredAttendance.map((record: any) => {
+      const ts = record.timesheet;
+      const inLog = ts?.logs?.find((l: any) => l.type === "CHECK_IN");
+      const outLog = ts?.logs?.find((l: any) => l.type === "CHECK_OUT");
+      
+      const inTime = inLog ? new Date(inLog.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+      const outTime = outLog ? new Date(outLog.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+      const statusStr = ts ? ts.status : "ABSENT";
+      const notesStr = ts?.latenessReason ? `Lateness: ${ts.latenessReason}` : ts?.notes ? ts.notes : "-";
+
+      return [
+        `"${record.user.fullName.replace(/"/g, '""')}"`,
+        record.user.email,
+        record.user.division?.name || "N/A",
+        statusStr,
+        inTime,
+        outTime,
+        inLog?.ipAddress || "N/A",
+        `"${notesStr.replace(/"/g, '""')}"`
+      ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Company_Attendance_${selectedAdminDate}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalEmployees = adminAttendance.length;
   const presentEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "PRESENT").length;
   const lateEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "LATE").length;
@@ -342,6 +384,12 @@ function ManagementAdminPanelContent() {
 
                 {/* Date Picker */}
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                  <button
+                    onClick={exportAdminAttendanceToCSV}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer border border-emerald-250 transition-all flex items-center gap-1.5 shadow-sm mr-2"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <input
                     type="date"
