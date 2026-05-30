@@ -71,7 +71,15 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = (title: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
 
   const { data: profile } = useQuery({
     queryKey: ["user-profile"],
@@ -201,32 +209,58 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         <span className="font-bold text-lg text-slate-900 tracking-tight">{appName}</span>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-7 overflow-y-auto custom-scrollbar">
-        {filteredSections.map((section: any) => (
-          <div key={section.title} className="space-y-1">
-            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{section.title}</p>
-            {section.items.map((item: any) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
-                  pathname === item.href 
-                    ? "bg-blue-50 text-blue-600 shadow-sm" 
-                    : "text-slate-500 hover:bg-slate-50/80 hover:text-slate-900"
-                )}
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto custom-scrollbar">
+        {filteredSections.map((section: any) => {
+          const isCollapsed = collapsedSections[section.title] || false;
+          return (
+            <div key={section.title} className="space-y-1.5">
+              <button 
+                onClick={() => toggleSection(section.title)}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50/50 rounded-lg uppercase tracking-widest transition-all cursor-pointer group"
               >
-                <item.icon className={cn("w-4 h-4", pathname === item.href ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600")} />
-                <span className="font-semibold text-[13px] tracking-tight">{item.label}</span>
-                {item.href === "/tickets" && ticketUnreadCount > 0 && (
-                  <span className="ml-auto flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm shadow-rose-500/25 animate-pulse shrink-0">
-                    {ticketUnreadCount}
-                  </span>
+                <span>{section.title}</span>
+                <ChevronRight className={cn(
+                  "w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-transform duration-200",
+                  !isCollapsed && "rotate-90"
+                )} />
+              </button>
+              
+              <AnimatePresence initial={false}>
+                {!isCollapsed && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="space-y-1 overflow-hidden"
+                  >
+                    {section.items.map((item: any) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => onNavItemClick?.()}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group cursor-pointer",
+                          pathname === item.href 
+                            ? "bg-blue-50 text-blue-600 shadow-sm" 
+                            : "text-slate-500 hover:bg-slate-50/80 hover:text-slate-900"
+                        )}
+                      >
+                        <item.icon className={cn("w-4 h-4", pathname === item.href ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600")} />
+                        <span className="font-semibold text-[13px] tracking-tight">{item.label}</span>
+                        {item.href === "/tickets" && ticketUnreadCount > 0 && (
+                          <span className="ml-auto flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm shadow-rose-500/25 animate-pulse shrink-0">
+                            {ticketUnreadCount}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </motion.div>
                 )}
-              </Link>
-            ))}
-          </div>
-        ))}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </nav>
 
       <div className="p-4 border-t border-slate-100 bg-slate-50/30">
