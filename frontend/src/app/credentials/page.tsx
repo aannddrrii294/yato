@@ -63,6 +63,7 @@ export default function CredentialsPage() {
   
   // Password verification state for revealing secrets
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [verifyPurpose, setVerifyPurpose] = useState<"REVEAL" | "EXPORT">("REVEAL");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [verifyError, setVerifyError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -334,7 +335,12 @@ export default function CredentialsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <button 
-              onClick={handleExportToExcel}
+              onClick={() => {
+                setVerifyPurpose("EXPORT");
+                setVerifyPassword("");
+                setVerifyError("");
+                setIsVerifyModalOpen(true);
+              }}
               className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-sm"
               title="Export Vault details into multi-sheet Excel file"
             >
@@ -914,23 +920,38 @@ export default function CredentialsPage() {
                   <ShieldCheck className="w-8 h-8 text-amber-600" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Identity Verification</h3>
-                <p className="text-[11px] font-medium text-slate-400 mb-6">Enter your account password to reveal this secret</p>
+                <p className="text-[11px] font-medium text-slate-400 mb-6">
+                  {verifyPurpose === "EXPORT" 
+                    ? "Enter your password to authorize vault export" 
+                    : "Enter your account password to reveal this secret"}
+                </p>
                 
                 <form onSubmit={async (e) => {
                   e.preventDefault();
-                  if (!verifyPassword.trim() || !pendingRevealCredId) return;
+                  if (!verifyPassword.trim()) return;
+                  if (verifyPurpose === "REVEAL" && !pendingRevealCredId) return;
+
                   setIsVerifying(true);
                   setVerifyError("");
                   try {
-                    // Verify password then reveal secret
-                    const res = await api.post(`/credentials/${pendingRevealCredId}/reveal`, { password: verifyPassword });
-                    setSelectedCred(res.data);
-                    setSecretVerified(true);
-                    setShowPassInDetail(true);
-                    setIsVerifyModalOpen(false);
-                    setVerifyPassword("");
-                    setFailedVerifyAttempts(0); // Reset attempts on success
-                    setIsDetailOpen(true); // Open the detail modal after verification
+                    if (verifyPurpose === "EXPORT") {
+                      // Verify standard password check
+                      await api.post("/auth/verify-password", { password: verifyPassword });
+                      setIsVerifyModalOpen(false);
+                      setVerifyPassword("");
+                      setFailedVerifyAttempts(0);
+                      handleExportToExcel();
+                    } else {
+                      // Verify password then reveal secret
+                      const res = await api.post(`/credentials/${pendingRevealCredId}/reveal`, { password: verifyPassword });
+                      setSelectedCred(res.data);
+                      setSecretVerified(true);
+                      setShowPassInDetail(true);
+                      setIsVerifyModalOpen(false);
+                      setVerifyPassword("");
+                      setFailedVerifyAttempts(0); // Reset attempts on success
+                      setIsDetailOpen(true); // Open the detail modal after verification
+                    }
                   } catch (err: any) {
                     const nextAttempts = failedVerifyAttempts + 1;
                     setFailedVerifyAttempts(nextAttempts);
@@ -990,7 +1011,9 @@ export default function CredentialsPage() {
                       className="btn-primary flex-1 flex items-center justify-center gap-2"
                     >
                       {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Verify & Reveal</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {verifyPurpose === "EXPORT" ? "Verify & Export" : "Verify & Reveal"}
+                      </span>
                     </button>
                   </div>
                 </form>
