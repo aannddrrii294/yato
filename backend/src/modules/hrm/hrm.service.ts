@@ -21,13 +21,25 @@ export class HrmService {
   }
 
   async createDivision(data: { name: string; description?: string; supervisorId?: string; managerId?: string; headId?: string }) {
-    return this.prisma.division.create({ data });
+    const cleanedData = {
+      ...data,
+      supervisorId: data.supervisorId === "" ? null : data.supervisorId || null,
+      managerId: data.managerId === "" ? null : data.managerId || null,
+      headId: data.headId === "" ? null : data.headId || null,
+    };
+    return this.prisma.division.create({ data: cleanedData });
   }
 
   async updateDivision(id: string, data: { name?: string; description?: string; supervisorId?: string; managerId?: string; headId?: string }) {
+    const cleanedData = {
+      ...data,
+      supervisorId: data.supervisorId === "" ? null : data.supervisorId,
+      managerId: data.managerId === "" ? null : data.managerId,
+      headId: data.headId === "" ? null : data.headId,
+    };
     return this.prisma.division.update({
       where: { id },
-      data,
+      data: cleanedData,
     });
   }
 
