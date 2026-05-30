@@ -30,6 +30,8 @@ export default function CalendarPage() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1); // 1-indexed
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDayTimesheet, setSelectedDayTimesheet] = useState<any | null>(null);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -201,8 +203,12 @@ export default function CalendarPage() {
                   <motion.div
                     key={`day-${dayNum}`}
                     whileHover={{ scale: 1.01 }}
+                    onClick={() => {
+                      setSelectedDayTimesheet(ts || { logs: [], totalHours: 0 });
+                      setSelectedDayDate(dateObj);
+                    }}
                     className={cn(
-                      "bg-white border border-slate-100 rounded-2xl p-4 min-h-[105px] flex flex-col justify-between transition-all hover:bg-slate-50/50 hover:border-slate-200 shadow-sm",
+                      "bg-white border border-slate-100 rounded-2xl p-4 min-h-[105px] flex flex-col justify-between transition-all hover:bg-slate-50/50 hover:border-slate-200 shadow-sm cursor-pointer",
                       ts?.status === "PRESENT" && "border-l-4 border-l-blue-500 bg-blue-50/10",
                       ts?.status === "LATE" && "border-l-4 border-l-amber-500 bg-amber-50/10",
                       ts?.status === "ON_LEAVE" && "border-l-4 border-l-purple-500 bg-purple-50/10"
@@ -346,6 +352,101 @@ export default function CalendarPage() {
                     <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center gap-2.5 text-slate-400 font-semibold text-[11px]">
                       <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
                       <span>Belum ada aktivitas absensi hari ini. Silakan Check-in.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Selected Day Details Modal */}
+      <AnimatePresence>
+        {selectedDayTimesheet && selectedDayDate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setSelectedDayTimesheet(null);
+                setSelectedDayDate(null);
+              }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white border border-slate-100 rounded-[2rem] p-8 shadow-2xl overflow-hidden z-10"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50/40 rounded-full filter blur-3xl" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setSelectedDayTimesheet(null);
+                  setSelectedDayDate(null);
+                }}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-655 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all cursor-pointer z-20"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-6 relative z-10">
+                <div className="text-center space-y-2">
+                  <span className="bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1 rounded-full inline-block">
+                    Attendance Details
+                  </span>
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                    {selectedDayDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Check-In Details */}
+                  {(() => {
+                    const checkInLog = selectedDayTimesheet.logs?.find((l: any) => l.type === "CHECK_IN");
+                    if (!checkInLog) return null;
+                    return (
+                      <div className="bg-blue-50/60 border border-blue-100 p-5 rounded-2xl space-y-3">
+                        <div className="text-blue-800 font-extrabold text-xs">
+                          Check-In Recorded Successfully
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium space-y-1.5 pl-1">
+                          <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkInLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                          <p><strong className="text-slate-800">Jam:</strong> {new Date(checkInLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                          <p><strong className="text-slate-800">IP Address:</strong> {checkInLog.ipAddress || "LAN/Office Network"}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Check-Out Details */}
+                  {(() => {
+                    const checkOutLog = selectedDayTimesheet.logs?.find((l: any) => l.type === "CHECK_OUT");
+                    if (!checkOutLog) return null;
+                    return (
+                      <div className="bg-emerald-50/60 border border-emerald-100 p-5 rounded-2xl space-y-3">
+                        <div className="text-emerald-800 font-extrabold text-xs">
+                          Check-Out Recorded Successfully
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium space-y-1.5 pl-1">
+                          <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkOutLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                          <p><strong className="text-slate-800">Jam:</strong> {new Date(checkOutLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                          <p><strong className="text-slate-800">Total Hours:</strong> {selectedDayTimesheet.totalHours} hrs</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {!selectedDayTimesheet.logs?.length && (
+                    <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex items-center justify-center text-slate-400 font-semibold text-[11px]">
+                      <span>Belum ada aktivitas absensi ditanggal ini.</span>
                     </div>
                   )}
                 </div>
