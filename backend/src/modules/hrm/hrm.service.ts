@@ -124,67 +124,7 @@ export class HrmService {
       throw new ForbiddenException(`Access Blocked: IP Address ${ipAddress} is not registered in corporate white-listing!`);
     }
 
-    // 2. Fetch User Division & today's assigned shift
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { divisionId: true },
-    });
-
-    let assignedShift = await this.prisma.workShift.findFirst({
-      where: {
-        userId,
-        date: {
-          gte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0),
-          lte: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59),
-        },
-      },
-      include: { shiftCategory: true },
-    });
-
-    if (!assignedShift) {
-      const defaultCategory = await this.prisma.shiftCategory.findFirst();
-      if (defaultCategory) {
-        assignedShift = {
-          id: "temp-shift",
-          userId,
-          date: now,
-          shiftCategoryId: defaultCategory.id,
-          shiftCategory: defaultCategory,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as any;
-      } else {
-        assignedShift = {
-          id: "temp-shift",
-          userId,
-          date: now,
-          shiftCategoryId: "default-id",
-          shiftCategory: {
-            id: "default-id",
-            name: "General Shift",
-            startTime: "08:00",
-            endTime: "17:00",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as any;
-      }
-    }
-
-    // 3. Detect lateness
-    const category = assignedShift.shiftCategory;
-    const [shiftHour, shiftMin] = category.startTime.split(':').map(Number);
-    const shiftStartTimeToday = new Date(now);
-    shiftStartTimeToday.setHours(shiftHour, shiftMin, 0, 0);
-
-    const isLate = now.getTime() > shiftStartTimeToday.getTime();
-    if (isLate && !latenessReason) {
-      throw new BadRequestException('Lateness Reason Required: Please specify why you are late today.');
-    }
-
-    // 4. Create or fetch Timesheet for today
+    // 2. Create or fetch Timesheet for today (No Shift/Scheduler Dependency)
     let timesheet = await this.prisma.timesheet.findFirst({
       where: {
         userId,
@@ -200,8 +140,8 @@ export class HrmService {
         data: {
           userId,
           date: now,
-          status: isLate ? 'LATE' : 'PRESENT',
-          latenessReason: isLate ? latenessReason : null,
+          status: 'PRESENT',
+          latenessReason: null,
         },
       });
     }

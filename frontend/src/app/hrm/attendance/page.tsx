@@ -30,10 +30,8 @@ const getFormattedDate = (date: Date) => {
 export default function AttendancePage() {
   const queryClient = useQueryClient();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [latenessReason, setLatenessReason] = useState("");
   const [workNotes, setWorkNotes] = useState("");
   const [clientIp, setClientIp] = useState("192.168.201.18");
-  const [showLatePrompt, setShowLatePrompt] = useState(false);
 
   // Admin Dashboard states
   const [activeTab, setActiveTab] = useState<"terminal" | "admin">("terminal");
@@ -104,23 +102,9 @@ export default function AttendancePage() {
     enabled: isAdmin,
   });
 
-  useEffect(() => {
-    if (todayShift?.shiftCategory) {
-      const startTimeStr = todayShift.shiftCategory.startTime;
-      const [h, m] = startTimeStr.split(":").map(Number);
-      const shiftStart = new Date();
-      shiftStart.setHours(h, m, 0, 0);
-      if (currentTime.getTime() > shiftStart.getTime()) {
-        setShowLatePrompt(true);
-      } else {
-        setShowLatePrompt(false);
-      }
-    }
-  }, [todayShift, currentTime]);
-
   const clockInMutation = useMutation({
-    mutationFn: async (payload: { latenessReason?: string }) => {
-      const res = await api.post("/hrm/timesheets/clock-in", payload);
+    mutationFn: async () => {
+      const res = await api.post("/hrm/timesheets/clock-in", {});
       return res.data;
     },
     onSuccess: () => {
@@ -141,9 +125,7 @@ export default function AttendancePage() {
   });
 
   const handleClockIn = () => {
-    clockInMutation.mutate({
-      latenessReason: showLatePrompt ? latenessReason : undefined,
-    });
+    clockInMutation.mutate();
   };
 
   const handleClockOut = () => {
@@ -187,7 +169,7 @@ export default function AttendancePage() {
                   "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
                   activeTab === "terminal"
                     ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
-                    : "text-slate-400 hover:text-slate-850 font-bold"
+                    : "text-slate-450 hover:text-slate-850 font-bold"
                 )}
               >
                 <Laptop className="w-3.5 h-3.5" />
@@ -199,7 +181,7 @@ export default function AttendancePage() {
                   "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
                   activeTab === "admin"
                     ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
-                    : "text-slate-400 hover:text-slate-850 font-bold"
+                    : "text-slate-450 hover:text-slate-850 font-bold"
                 )}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -214,7 +196,7 @@ export default function AttendancePage() {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-                <div className="bg-blue-50 p-3 rounded-2xl">
+                <div className="bg-blue-50/50 p-3 rounded-2xl">
                   <Shield className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
@@ -224,7 +206,7 @@ export default function AttendancePage() {
               </div>
 
               <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-                <div className="bg-amber-50 p-3 rounded-2xl">
+                <div className="bg-amber-50/50 p-3 rounded-2xl">
                   <Briefcase className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
@@ -236,7 +218,7 @@ export default function AttendancePage() {
               </div>
 
               <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-                <div className="bg-emerald-50 p-3 rounded-2xl">
+                <div className="bg-emerald-50/50 p-3 rounded-2xl">
                   <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
@@ -275,7 +257,7 @@ export default function AttendancePage() {
                 </div>
 
                 <div className="space-y-4 pt-6 border-t border-slate-100 relative z-10">
-                  {todayShift?.shiftCategory ? (
+                  {todayShift?.shiftCategory && (
                     <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Shift Hours</div>
                       <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
@@ -285,65 +267,41 @@ export default function AttendancePage() {
                         </span>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 p-3.5 rounded-xl flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-500" />
-                      <span>No shift assigned for today. Clock-in unavailable.</span>
-                    </div>
                   )}
 
-                  {todayShift?.shiftCategory && showLatePrompt && !todayTimesheet && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-amber-600 uppercase tracking-widest block flex items-center gap-1.5">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        <span>Lateness Reason (Required)</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Traffic jam or network issue..."
-                        value={latenessReason}
-                        onChange={(e) => setLatenessReason(e.target.value)}
-                        className="input-field w-full text-xs py-2 bg-slate-50 border-slate-200"
-                      />
-                    </div>
-                  )}
-
-                  {todayShift?.shiftCategory && (
-                    <div>
-                      {!todayTimesheet ? (
+                  <div>
+                    {!todayTimesheet ? (
+                      <button
+                        onClick={handleClockIn}
+                        disabled={clockInMutation.isPending}
+                        className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-blue-500/10 cursor-pointer"
+                      >
+                        {clockInMutation.isPending ? "Clocking In..." : "🚀 CLOCK IN (PRESENT)"}
+                      </button>
+                    ) : !todayTimesheet.logs.find((l: any) => l.type === "CHECK_OUT") ? (
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Add daily report summary (optional)..."
+                          value={workNotes}
+                          onChange={(e) => setWorkNotes(e.target.value)}
+                          className="input-field w-full text-xs py-2.5 bg-slate-50 border-slate-200"
+                        />
                         <button
-                          onClick={handleClockIn}
-                          disabled={clockInMutation.isPending || (showLatePrompt && !latenessReason.trim())}
-                          className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-blue-500/10"
+                          onClick={handleClockOut}
+                          disabled={clockOutMutation.isPending}
+                          className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-amber-500/10 cursor-pointer"
                         >
-                          {clockInMutation.isPending ? "Clocking In..." : "🚀 CLOCK IN (PRESENT)"}
+                          {clockOutMutation.isPending ? "Clocking Out..." : "🏁 CLOCK OUT"}
                         </button>
-                      ) : !todayTimesheet.logs.find((l: any) => l.type === "CHECK_OUT") ? (
-                        <div className="space-y-3">
-                          <input
-                            type="text"
-                            placeholder="Add daily report summary (optional)..."
-                            value={workNotes}
-                            onChange={(e) => setWorkNotes(e.target.value)}
-                            className="input-field w-full text-xs py-2.5 bg-slate-50 border-slate-200"
-                          />
-                          <button
-                            onClick={handleClockOut}
-                            disabled={clockOutMutation.isPending}
-                            className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl active:scale-[0.98] shadow-md shadow-amber-500/10"
-                          >
-                            {clockOutMutation.isPending ? "Clocking Out..." : "🏁 CLOCK OUT"}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold p-4 rounded-2xl flex items-center justify-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                          <span>Shift Completed for Today! ({todayTimesheet.totalHours} hrs worked)</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold p-4 rounded-2xl flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <span>Shift Completed for Today! ({todayTimesheet.totalHours} hrs worked)</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

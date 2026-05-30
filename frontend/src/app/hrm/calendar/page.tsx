@@ -78,21 +78,8 @@ export default function CalendarPage() {
     }
   });
 
-  const handleClockIn = async () => {
-    try {
-      await clockInMutation.mutateAsync({});
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "";
-      if (msg.includes("Lateness Reason Required")) {
-        const reason = prompt("You are late! Please specify why you are late today:");
-        if (reason === null) return; // User cancelled
-        if (!reason.trim()) {
-          alert("Lateness reason is required to clock in when late!");
-          return;
-        }
-        clockInMutation.mutate({ latenessReason: reason });
-      }
-    }
+  const handleClockIn = () => {
+    clockInMutation.mutate({});
   };
 
   const handleClockOut = () => {
