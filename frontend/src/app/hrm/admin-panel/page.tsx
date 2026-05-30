@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
@@ -47,7 +47,7 @@ const getFormattedDate = (date: any) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function ManagementAdminPanelPage() {
+function ManagementAdminPanelContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { appName, appLogo } = useBranding();
@@ -983,5 +983,20 @@ export default function ManagementAdminPanelPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ManagementAdminPanelPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-background items-center justify-center p-6 text-slate-500">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="text-xs font-bold uppercase tracking-wider">Loading panel...</span>
+        </div>
+      </div>
+    }>
+      <ManagementAdminPanelContent />
+    </Suspense>
   );
 }
