@@ -137,6 +137,23 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
   const hasPermission = (permission?: string) => {
     if (!permission) return true;
     if (isAdmin) return true;
+    if (permission === "VIEW_HRM_ADMIN_PANEL") {
+      return (
+        userPermissions.includes("VIEW_HRM_ADMIN_PANEL") ||
+        userPermissions.includes("MANAGE_HRM") ||
+        userPermissions.includes("MANAGE_HRM_ATTENDANCE") ||
+        userPermissions.includes("MANAGE_HRM_LEAVES")
+      );
+    }
+    if (permission === "MANAGE_HRM_DIVISIONS") {
+      return userPermissions.includes("MANAGE_HRM_DIVISIONS") || userPermissions.includes("MANAGE_HRM");
+    }
+    if (permission === "MANAGE_HRM_SCHEDULER") {
+      return userPermissions.includes("MANAGE_HRM_SCHEDULER") || userPermissions.includes("MANAGE_HRM");
+    }
+    if (permission === "MANAGE_HRM_ADJUSTMENTS") {
+      return userPermissions.includes("MANAGE_HRM_ADJUSTMENTS") || userPermissions.includes("MANAGE_HRM");
+    }
     return userPermissions.includes(permission);
   };
 
@@ -155,11 +172,11 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
     {
       title: "Management Admin",
       items: [
-        { icon: Shield, label: "Management Admin Panel", href: "/hrm/admin-panel", permission: "MANAGE_HRM" },
-        { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM" },
-        { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_HRM" },
+        { icon: Shield, label: "Management Admin Panel", href: "/hrm/admin-panel", permission: "VIEW_HRM_ADMIN_PANEL" },
+        { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM_DIVISIONS" },
+        { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_HRM_SCHEDULER" },
         // { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_HRM" },
-        { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_HRM" },
+        { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_HRM_ADJUSTMENTS" },
       ]
     },
     {

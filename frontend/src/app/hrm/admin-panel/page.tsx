@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import {
   Clock,
@@ -47,11 +48,19 @@ const getFormattedDate = (date: any) => {
 };
 
 export default function ManagementAdminPanelPage() {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { appName, appLogo } = useBranding();
   const [activeTab, setActiveTab] = useState<"attendance" | "leaves">("attendance");
   const currentYear = new Date().getFullYear();
   const [selectedPrintLeave, setSelectedPrintLeave] = useState<any | null>(null);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "leaves" || tabParam === "attendance") {
+      setActiveTab(tabParam as "attendance" | "leaves");
+    }
+  }, [searchParams]);
 
   const handlePrintLeaveForm = (leave: any) => {
     setSelectedPrintLeave(leave);
@@ -79,7 +88,20 @@ export default function ManagementAdminPanelPage() {
   });
 
   const userRoles = profile?.roles?.map((ur: any) => ur.role.name) || [];
-  const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("HR");
+  const userPermissions = profile?.roles?.flatMap((ur: any) => ur.role.permissions || []) || [];
+  
+  const hasFullAdmin = userRoles.includes("ADMIN") || userRoles.includes("HR") || userPermissions.includes("MANAGE_HRM");
+  const hasAttendancePerm = hasFullAdmin || userPermissions.includes("MANAGE_HRM_ATTENDANCE");
+  const hasLeavesPerm = hasFullAdmin || userPermissions.includes("MANAGE_HRM_LEAVES");
+  const hasAnyAccess = hasAttendancePerm || hasLeavesPerm;
+
+  useEffect(() => {
+    if (!hasAttendancePerm && hasLeavesPerm && activeTab === "attendance") {
+      setActiveTab("leaves");
+    } else if (!hasLeavesPerm && hasAttendancePerm && activeTab === "leaves") {
+      setActiveTab("attendance");
+    }
+  }, [hasAttendancePerm, hasLeavesPerm, activeTab]);
 
   // 2. Attendance Oversight Query
   const { data: adminAttendance = [], isLoading: isAdminAttendanceLoading, refetch: refetchAdminAttendance } = useQuery({
@@ -88,7 +110,7 @@ export default function ManagementAdminPanelPage() {
       const res = await api.get(`/hrm/timesheets/all?date=${selectedAdminDate}`);
       return res.data;
     },
-    enabled: isAdmin,
+    enabled: hasAttendancePerm,
   });
 
   // 3. Leave Balances Oversight Query
@@ -98,7 +120,7 @@ export default function ManagementAdminPanelPage() {
       const res = await api.get("/hrm/admin/leaves/balances");
       return res.data;
     },
-    enabled: isAdmin,
+    enabled: hasLeavesPerm,
   });
 
   // 4. Leave Requests Oversight Query
@@ -108,7 +130,7 @@ export default function ManagementAdminPanelPage() {
       const res = await api.get("/hrm/admin/leaves/requests");
       return res.data;
     },
-    enabled: isAdmin,
+    enabled: hasLeavesPerm,
   });
 
   // 5. Load/Save customizable leave types from localStorage
@@ -195,7 +217,7 @@ export default function ManagementAdminPanelPage() {
   const absentEmployees = totalEmployees - presentEmployees - lateEmployees;
 
   // Access check fallback
-  if (profile && !isAdmin) {
+  if (profile && !hasAnyAccess) {
     return (
       <div className="flex min-h-screen bg-slate-900 text-white items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-sm">
@@ -203,7 +225,7 @@ export default function ManagementAdminPanelPage() {
             <Lock className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Access Denied</h2>
-          <p className="text-sm text-slate-400">You must hold Administrator or HR roles to access the Management Admin Panel.</p>
+          <p className="text-sm text-slate-400">You must hold appropriate permissions to access the Management Admin Panel.</p>
         </div>
       </div>
     );
@@ -223,32 +245,34 @@ export default function ManagementAdminPanelPage() {
             />
           </div>
           
-          <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0 flex items-center gap-1.5">
-            <button
-              onClick={() => setActiveTab("attendance")}
-              className={cn(
-                "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
-                activeTab === "attendance"
-                  ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
-                  : "text-slate-400 hover:text-slate-655"
-              )}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              Attendance logs
-            </button>
-            <button
-              onClick={() => setActiveTab("leaves")}
-              className={cn(
-                "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
-                activeTab === "leaves"
-                  ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
-                  : "text-slate-400 hover:text-slate-655"
-              )}
-            >
-              <Coffee className="w-3.5 h-3.5" />
-              Leaves oversight
-            </button>
-          </div>
+          {hasAttendancePerm && hasLeavesPerm && (
+            <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0 flex items-center gap-1.5">
+              <button
+                onClick={() => setActiveTab("attendance")}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
+                  activeTab === "attendance"
+                    ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
+                    : "text-slate-400 hover:text-slate-655"
+                )}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Attendance logs
+              </button>
+              <button
+                onClick={() => setActiveTab("leaves")}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
+                  activeTab === "leaves"
+                    ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
+                    : "text-slate-400 hover:text-slate-655"
+                )}
+              >
+                <Coffee className="w-3.5 h-3.5" />
+                Leaves oversight
+              </button>
+            </div>
+          )}
         </header>
 
         {/* ========================================================================= */}

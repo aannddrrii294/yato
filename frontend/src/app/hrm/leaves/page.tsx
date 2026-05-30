@@ -27,9 +27,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/context/branding-context";
+import { useRouter } from "next/navigation";
 
 
 export default function LeaveHubPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const { appName, appLogo } = useBranding();
@@ -60,7 +62,9 @@ export default function LeaveHubPage() {
   });
 
   const userRoles = profile?.roles?.map((ur: any) => ur.role.name) || [];
+  const userPermissions = profile?.roles?.flatMap((ur: any) => ur.role.permissions || []) || [];
   const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("HR");
+  const canAccessAdmin = isAdmin || userPermissions.includes("VIEW_HRM_ADMIN_PANEL") || userPermissions.includes("MANAGE_HRM") || userPermissions.includes("MANAGE_HRM_LEAVES");
 
   // 2. Load and save customizable leave types (saved in localStorage for tenant flexibility)
   const [customLeaveTypes, setCustomLeaveTypes] = useState<string[]>(() => {
@@ -278,7 +282,7 @@ export default function LeaveHubPage() {
               subtitle="Submit annual or sick leaves, view balance metrics, and manage division hierarchy approvals" 
             />
           </div>
-          {isAdmin && (
+          {canAccessAdmin && (
             <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0">
               <button
                 onClick={() => setActiveTab("my")}
@@ -292,7 +296,7 @@ export default function LeaveHubPage() {
                 My Leave
               </button>
               <button
-                onClick={() => setActiveTab("admin")}
+                onClick={() => router.push("/hrm/admin-panel?tab=leaves")}
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
                   activeTab === "admin"

@@ -59,7 +59,13 @@ export class RoleService {
       "VIEW_FILES",
       "MANAGE_FILES",
       "VIEW_HRM",
-      "MANAGE_HRM"
+      "MANAGE_HRM",
+      "VIEW_HRM_ADMIN_PANEL",
+      "MANAGE_HRM_ATTENDANCE",
+      "MANAGE_HRM_LEAVES",
+      "MANAGE_HRM_DIVISIONS",
+      "MANAGE_HRM_SCHEDULER",
+      "MANAGE_HRM_ADJUSTMENTS"
     ];
   }
 }
