@@ -696,7 +696,7 @@ export default function LeaveHubPage() {
                     <input
                       type="checkbox"
                       checked={customFormSettings.requireAttachment}
-                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, requireAttachment: e.target.checked }))}
+                      onChange={(e) => setCustomFormSettings({ ...customFormSettings, requireAttachment: e.target.checked })}
                       className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <div>
@@ -709,7 +709,7 @@ export default function LeaveHubPage() {
                     <input
                       type="checkbox"
                       checked={customFormSettings.enableBackupEmployee}
-                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, enableBackupEmployee: e.target.checked }))}
+                      onChange={(e) => setCustomFormSettings({ ...customFormSettings, enableBackupEmployee: e.target.checked })}
                       className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <div>
@@ -722,7 +722,7 @@ export default function LeaveHubPage() {
                     <input
                       type="checkbox"
                       checked={customFormSettings.enableEmergencyContact}
-                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, enableEmergencyContact: e.target.checked }))}
+                      onChange={(e) => setCustomFormSettings({ ...customFormSettings, enableEmergencyContact: e.target.checked })}
                       className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <div>
