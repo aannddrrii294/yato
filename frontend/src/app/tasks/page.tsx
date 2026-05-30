@@ -2041,6 +2041,37 @@ export default function TasksPage() {
                             value={newCommentText}
                             onChange={(e) => handleCommentChange(e.target.value, e.target.selectionStart)}
                             onKeyDown={handleKeyDown}
+                            onPaste={async (e) => {
+                              const clipboardItems = e.clipboardData?.items;
+                              if (!clipboardItems) return;
+                              for (let i = 0; i < clipboardItems.length; i++) {
+                                const item = clipboardItems[i];
+                                if (item.type.startsWith("image/")) {
+                                  e.preventDefault(); // Prevent pasting raw text/image bytes in textarea text
+                                  const file = item.getAsFile();
+                                  if (!file) continue;
+                                  
+                                  // Limit to 10MB
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    alert("File is too large. Max 10MB.");
+                                    return;
+                                  }
+                                  
+                                  // Create filename with timestamp
+                                  const ext = file.type.split("/")[1] || "png";
+                                  const filename = `screenshot_${Date.now()}.${ext}`;
+                                  
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setCommentAttachments(prev => [
+                                      ...prev,
+                                      { filename, base64Data: reader.result as string }
+                                    ]);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }
+                            }}
                             className="w-full min-h-[50px] max-h-[120px] bg-transparent border-none outline-none focus:ring-0 resize-none font-medium text-[11px] leading-relaxed py-1.5 px-2 text-slate-700"
                           />
                           
