@@ -29,7 +29,8 @@ import {
   ArrowLeftRight,
   Shield,
   Coins,
-  Edit
+  Edit,
+  Languages
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -37,6 +38,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBranding } from "@/context/branding-context";
+import { useLanguage } from "@/context/language-context";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -68,6 +70,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { appName, appLogo } = useBranding();
+  const { lang, setLang } = useLanguage();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -265,19 +268,20 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
 
       <div className="p-4 border-t border-slate-100 bg-slate-50/30">
         <div className="flex items-center justify-between mb-4 px-1">
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              className={cn(
-                "p-2.5 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-white border border-transparent hover:border-slate-100 shadow-sm hover:shadow-md",
-                showNotifications && "bg-white border-slate-100 text-slate-900 shadow-md"
-              )}
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
-              )}
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={cn(
+                  "p-2.5 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-white border border-transparent hover:border-slate-100 shadow-sm hover:shadow-md",
+                  showNotifications && "bg-white border-slate-100 text-slate-900 shadow-md"
+                )}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+                )}
+              </button>
 
             <AnimatePresence>
               {showNotifications && (
@@ -352,6 +356,17 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Language Switcher Button */}
+          <button 
+            onClick={() => setLang(lang === "EN" ? "ID" : "EN")}
+            className="px-2 py-1.5 text-[9px] font-black text-slate-500 hover:text-slate-800 transition-all rounded-lg bg-slate-100/50 hover:bg-white border border-slate-100/30 hover:border-slate-250 shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
+            title={lang === "EN" ? "Switch to Indonesian" : "Ubah ke Bahasa Inggris"}
+          >
+            <Languages className="w-3.5 h-3.5 text-blue-600" />
+            <span className="tracking-widest">{lang}</span>
+          </button>
+        </div>
           
           {/* Theme/Other Quick Actions could go here */}
           <div className="w-px h-4 bg-slate-200" />
