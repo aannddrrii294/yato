@@ -181,12 +181,20 @@ export class SystemConfigService {
 
     const getDockerContainers = async (): Promise<any[]> => {
       return new Promise((resolve) => {
-        const options = {
-          socketPath: '/var/run/docker.sock',
-          path: '/containers/json?all=1',
-          method: 'GET',
-          timeout: 1000,
-        };
+        const options: any = process.env.DOCKER_HOST_URL
+          ? {
+              host: 'yato-docker-proxy',
+              port: 2375,
+              path: '/containers/json?all=1',
+              method: 'GET',
+              timeout: 1000,
+            }
+          : {
+              socketPath: '/var/run/docker.sock',
+              path: '/containers/json?all=1',
+              method: 'GET',
+              timeout: 1000,
+            };
 
         const req = http.request(options, (res: any) => {
           let data = '';

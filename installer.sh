@@ -71,9 +71,15 @@ if [ ! -f ".env" ]; then
     JWT_SECRET=$(openssl rand -base64 32)
     JWT_REFRESH_SECRET=$(openssl rand -base64 32)
     ENC_KEY=$(openssl rand -hex 16)
+    DB_PASS=$(openssl rand -hex 16)
     sed -i "s|JWT_SECRET=.*|JWT_SECRET=\"$JWT_SECRET\"|" .env
     sed -i "s|JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=\"$JWT_REFRESH_SECRET\"|" .env
     sed -i "s|ENCRYPTION_KEY=.*|ENCRYPTION_KEY=\"$ENC_KEY\"|" .env
+    
+    # Generate dynamic secure DB parameters
+    echo "DB_USER=\"yato\"" >> .env
+    echo "DB_PASSWORD=\"$DB_PASS\"" >> .env
+    echo "DB_DATABASE=\"yato\"" >> .env
 fi
 
 # Detect Host Timezone and sync .env

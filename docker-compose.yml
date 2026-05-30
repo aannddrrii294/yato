@@ -19,6 +19,22 @@ services:
       timeout: 5s
       retries: 5
 
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: yato-docker-proxy
+    restart: always
+    environment:
+      CONTAINERS: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "127.0.0.1:2375:2375"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2375"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: yato-redis
@@ -27,6 +43,7 @@ services:
       TZ: ${TZ:-UTC}
     ports:
       - "127.0.0.1:6380:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy volatile-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -45,17 +62,20 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      NODE_OPTIONS: "--max-old-space-size=512"
+      DOCKER_HOST_URL: "http://yato-docker-proxy:2375"
       TZ: ${TZ:-UTC}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      docker-proxy:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
       - .env:/app/.env
-      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "127.0.0.1:4000:3000"
     healthcheck:
