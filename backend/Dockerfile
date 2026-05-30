@@ -26,6 +26,8 @@ ENV TZ="UTC"
 
 WORKDIR /app
 
+RUN mkdir -p /app/logs && chown -R node:node /app
+
 COPY --from=builder --chown=node:node /app/package*.json ./
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
