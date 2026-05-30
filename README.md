@@ -52,6 +52,14 @@ True to its namesake, the **YATO Platform** acts as the ultimate, dedicated "hel
 * **Role-Based Access Control (RBAC):** Strict NestJS controller guards implementing multi-tier permissions (`ADMIN`, `SUPPORT_AGENT`, etc.).
 * **Brute-Force & Lockout Guard:** Automated monitoring of failed login attempts that locks out compromised accounts after consecutive validation errors.
 
+### 🔒 6. Production-Grade Hardening & Security Optimizations
+* **Docker Socket Proxy Isolation:** Backend has **zero direct access** to host `/var/run/docker.sock`. All metrics checks are proxied via a secure, read-only API gateway (`tecnativa/docker-socket-proxy`) allowing only `GET /containers` to prevent privilege escalation.
+* **Non-Root Container Enforcement:** Both frontend and backend Docker containers run under the unprivileged `node` user instead of `root`.
+* **Private Network Isolation:** Databases (`PostgreSQL`, `Redis`) and app servers are bound to `127.0.0.1`, completely isolated from external traffic. Only Nginx is exposed.
+* **Rate Limiting & DDOS Prevention:** Dual-layered rate limits at both Nginx (`10r/s` with burst of 20) and application levels.
+* **Dynamic Credentials Generation:** Installer script dynamically generates secure random **32-character passwords** during deployment.
+* **Gzip & Resource Optimizations:** Enable Nginx Gzip compression, auto CPU worker scaling, Node memory heap limit (512MB), and Redis volatile-lru constraints.
+
 ---
 
 ## 🛠️ Complete Technology Stack
@@ -364,12 +372,11 @@ Once the platform is bootstrapped, use the target routing endpoints below:
 
 If a user or administrator is locked out because their Time-based One-Time Password (TOTP) is rejected (due to timezone drift or clock desynchronization between their mobile device and the VPS host):
 
-#### 1. 🚨 Emergency MFA Bypass Token
-YATO features a secure, built-in emergency bypass code. If an account has MFA enabled and is completely locked out:
-* In the MFA validation screen, input **`000000`** as the 6-digit OTP code.
-* This will immediately bypass verification, allowing access to the dashboard where you can disable or re-key the user's MFA settings.
-> [!NOTE]
-> Emergency bypass logins are strictly tracked and generate an `[EMERGENCY] MFA bypassed` warning log in the system logs.
+#### 1. 🚨 Single-Use Emergency Recovery Codes
+YATO features a secure, Bcrypt-hashed Emergency Recovery Codes system to prevent permanent lockout. When you enable MFA:
+* You are presented with **5 unique emergency recovery codes** in the format `YATO-RC-XXXX-XXXX`.
+* Save these codes in a secure vault. If you lose your authenticator app, input one of these recovery codes into the 2FA token field.
+* Recovery codes are **single-use** (consumed immediately upon a successful verification) and protected inside the database using industry-standard **Bcrypt** hashing to prevent credential leaks.
 
 #### 2. 👥 Disabling MFA via Administrator Panel
 If another Administrator is active:
