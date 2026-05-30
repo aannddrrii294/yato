@@ -49,7 +49,6 @@ export class HrmController {
     breakStart: string;
     breakEnd: string;
     colorCode?: string;
-    allowanceAmt?: number;
     description?: string;
   }) {
     return this.hrmService.createShiftCategory(dto);

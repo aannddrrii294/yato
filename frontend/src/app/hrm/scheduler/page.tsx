@@ -33,7 +33,6 @@ export default function ShiftSchedulerPage() {
     breakStart: "12:00",
     breakEnd: "13:00",
     colorCode: "#3b82f6",
-    allowanceAmt: 0,
     description: "",
   });
 
@@ -66,8 +65,13 @@ export default function ShiftSchedulerPage() {
   const createCategoryMutation = useMutation({
     mutationFn: async (payload: typeof shiftForm) => {
       const res = await api.post("/hrm/shifts/categories", {
-        ...payload,
-        allowanceAmt: Number(payload.allowanceAmt),
+        name: payload.name,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        breakStart: payload.breakStart,
+        breakEnd: payload.breakEnd,
+        colorCode: payload.colorCode,
+        description: payload.description,
       });
       return res.data;
     },
@@ -81,7 +85,6 @@ export default function ShiftSchedulerPage() {
         breakStart: "12:00",
         breakEnd: "13:00",
         colorCode: "#3b82f6",
-        allowanceAmt: 0,
         description: "",
       });
       alert("Shift category created successfully!");
@@ -183,16 +186,6 @@ export default function ShiftSchedulerPage() {
                       </span>
                     </div>
                   </div>
-
-                  <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
-                      Daily Shift Allowance
-                    </span>
-                    <span className="font-mono text-emerald-600 font-bold text-xs">
-                      Rp {Number(cat.allowanceAmt || 0).toLocaleString()}
-                    </span>
-                  </div>
                 </div>
               </div>
             ))}
@@ -285,32 +278,20 @@ export default function ShiftSchedulerPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Daily Allowance (Rp)</label>
-                      <input
-                        type="number"
-                        placeholder="50000"
-                        value={shiftForm.allowanceAmt}
-                        onChange={(e) => setShiftForm(prev => ({ ...prev, allowanceAmt: Number(e.target.value) }))}
-                        className="input-field w-full text-xs py-2 bg-slate-50 border-slate-200 font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Roster Color Code</label>
-                      <input
-                        type="color"
-                        value={shiftForm.colorCode}
-                        onChange={(e) => setShiftForm(prev => ({ ...prev, colorCode: e.target.value }))}
-                        className="w-full h-[40px] p-1 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer"
-                      />
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Roster Color Code</label>
+                    <input
+                      type="color"
+                      value={shiftForm.colorCode}
+                      onChange={(e) => setShiftForm(prev => ({ ...prev, colorCode: e.target.value }))}
+                      className="w-full h-[40px] p-1 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer"
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Description</label>
                     <textarea
-                      placeholder="e.g. Standard 8-hour workday with shift allowance..."
+                      placeholder="e.g. Standard 8-hour workday..."
                       value={shiftForm.description}
                       onChange={(e) => setShiftForm(prev => ({ ...prev, description: e.target.value }))}
                       className="input-field w-full text-xs min-h-[60px] resize-none bg-slate-50 border-slate-200"

@@ -46,7 +46,6 @@ export class HrmService {
     breakStart: string;
     breakEnd: string;
     colorCode?: string;
-    allowanceAmt?: number;
     description?: string;
   }) {
     return this.prisma.shiftCategory.create({ data });
