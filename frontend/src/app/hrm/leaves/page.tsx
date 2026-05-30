@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import {
@@ -17,7 +17,12 @@ import {
   X,
   Plus,
   Loader2,
-  Printer
+  Printer,
+  Users,
+  Settings,
+  Edit2,
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -29,6 +34,14 @@ export default function LeaveHubPage() {
   const currentYear = new Date().getFullYear();
   const { appName, appLogo } = useBranding();
   const [selectedPrintLeave, setSelectedPrintLeave] = useState<any | null>(null);
+  
+  // Navigation Tabs: "my" (personal leave hub) vs "admin" (admin panel control)
+  const [activeTab, setActiveTab] = useState<"my" | "admin">("my");
+
+  // Admin Modals & Controls state
+  const [isAdjustingBalance, setIsAdjustingBalance] = useState<any | null>(null);
+  const [adjustForm, setAdjustForm] = useState({ allocated: 12, used: 0 });
+  const [newLeaveType, setNewLeaveType] = useState("");
 
   const handlePrintLeaveForm = (leave: any) => {
     setSelectedPrintLeave(leave);
@@ -37,14 +50,64 @@ export default function LeaveHubPage() {
     }, 200);
   };
 
-  // Form state
-  const [leaveForm, setLeaveForm] = useState({
-    type: "ANNUAL_LEAVE",
+  // 1. Fetch Logged-in User Profile to check Admin/HR permissions
+  const { data: profile } = useQuery({
+    queryKey: ["auth", "profile"],
+    queryFn: async () => {
+      const res = await api.get("/auth/profile");
+      return res.data;
+    },
+  });
+
+  const userRoles = profile?.roles?.map((ur: any) => ur.role.name) || [];
+  const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("HR");
+
+  // 2. Load and save customizable leave types (saved in localStorage for tenant flexibility)
+  const [customLeaveTypes, setCustomLeaveTypes] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("yato_custom_leave_types");
+      if (saved) return JSON.parse(saved);
+    }
+    return [
+      "Annual Leave (Cuti Tahunan)",
+      "Sick Leave (Sakit dengan Surat)",
+      "Permit (Izin Khusus)",
+      "Maternity Leave (Cuti Melahirkan)",
+      "Marriage Leave (Cuti Menikah)",
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("yato_custom_leave_types", JSON.stringify(customLeaveTypes));
+  }, [customLeaveTypes]);
+
+  // 3. Load and save customizable leave form settings (Required field toggles)
+  const [customFormSettings, setCustomFormSettings] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("yato_custom_leave_form_settings");
+      if (saved) return JSON.parse(saved);
+    }
+    return {
+      requireAttachment: false,
+      enableBackupEmployee: false,
+      enableEmergencyContact: false,
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem("yato_custom_leave_form_settings", JSON.stringify(customFormSettings));
+  }, [customFormSettings]);
+
+  // Personal Form state
+  const [leaveForm, setLeaveForm] = useState<any>({
+    type: "Annual Leave (Cuti Tahunan)",
     startDate: "",
     endDate: "",
     reason: "",
+    backupEmployee: "",
+    emergencyContact: "",
+    attachmentUrl: "",
   });
-
 
   // Fetch Leave Balance
   const { data: leaveBalance } = useQuery({
@@ -73,18 +136,63 @@ export default function LeaveHubPage() {
     },
   });
 
-  // Submit leave mutation
+  // ADMIN SPECIFIC QUERIES
+  // Fetch all user leave balances
+  const { data: adminBalances = [], refetch: refetchAdminBalances } = useQuery({
+    queryKey: ["hrm", "admin-balances"],
+    queryFn: async () => {
+      const res = await api.get("/hrm/admin/leaves/balances");
+      return res.data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch all leave requests for oversight
+  const { data: adminRequests = [], refetch: refetchAdminRequests } = useQuery({
+    queryKey: ["hrm", "admin-requests"],
+    queryFn: async () => {
+      const res = await api.get("/hrm/admin/leaves/requests");
+      return res.data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Submit leave request mutation
   const leaveRequestMutation = useMutation({
-    mutationFn: async (payload: typeof leaveForm) => {
-      const res = await api.post("/hrm/leaves", payload);
+    mutationFn: async (payload: any) => {
+      // If customized fields exist, merge them into the reason/notes to preserve data
+      const extendedReason = [
+        payload.reason,
+        payload.backupEmployee ? `[Backup Employee: ${payload.backupEmployee}]` : "",
+        payload.emergencyContact ? `[Emergency Contact: ${payload.emergencyContact}]` : "",
+        payload.attachmentUrl ? `[Attachment: ${payload.attachmentUrl}]` : "",
+      ].filter(Boolean).join(" ");
+
+      const res = await api.post("/hrm/leaves", {
+        type: payload.type.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, ""),
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        reason: extendedReason,
+      });
       return res.data;
     },
     onSuccess: () => {
       refetchLeaves();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
-      setLeaveForm({ type: "ANNUAL_LEAVE", startDate: "", endDate: "", reason: "" });
+      setLeaveForm({
+        type: customLeaveTypes[0] || "Annual Leave (Cuti Tahunan)",
+        startDate: "",
+        endDate: "",
+        reason: "",
+        backupEmployee: "",
+        emergencyContact: "",
+        attachmentUrl: "",
+      });
       alert("Leave request submitted successfully!");
     },
+    onError: (err: any) => {
+      alert(err.response?.data?.message || "Failed to submit leave request.");
+    }
   });
 
   // Take leave action mutation
@@ -98,8 +206,43 @@ export default function LeaveHubPage() {
     },
     onSuccess: () => {
       refetchPendingApprovals();
+      refetchAdminRequests();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
     },
+  });
+
+  // Admin mutation to adjust leave balance
+  const updateBalanceMutation = useMutation({
+    mutationFn: async ({ userId, allocated, used }: { userId: string; allocated: number; used: number }) => {
+      const res = await api.patch(`/hrm/admin/leaves/balances/${userId}`, { allocated, used });
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchAdminBalances();
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      setIsAdjustingBalance(null);
+      alert("User leave balance adjusted successfully!");
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.message || "Failed to adjust balance");
+    }
+  });
+
+  // Admin force override status mutation
+  const adminOverrideRequestMutation = useMutation({
+    mutationFn: async ({ requestId, status, notes }: { requestId: string; status: "APPROVED" | "REJECTED"; notes?: string }) => {
+      const res = await api.patch(`/hrm/admin/leaves/requests/${requestId}/status`, { status, notes });
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchAdminRequests();
+      refetchAdminBalances();
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      alert("Leave request overridden successfully!");
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.message || "Override failed");
+    }
   });
 
   const handleLeaveSubmit = (e: React.FormEvent) => {
@@ -135,248 +278,713 @@ export default function LeaveHubPage() {
               subtitle="Submit annual or sick leaves, view balance metrics, and manage division hierarchy approvals" 
             />
           </div>
+          {isAdmin && (
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+              <button
+                onClick={() => setActiveTab("my")}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer",
+                  activeTab === "my"
+                    ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
+                    : "text-slate-400 hover:text-slate-655"
+                )}
+              >
+                My Leave
+              </button>
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2",
+                  activeTab === "admin"
+                    ? "bg-white text-slate-800 shadow-md shadow-slate-200/50"
+                    : "text-slate-400 hover:text-slate-655"
+                )}
+              >
+                <Shield className="w-3.5 h-3.5 text-blue-600" />
+                Admin Panel
+              </button>
+            </div>
+          )}
         </header>
 
-        {/* Leave Balance Stats Header */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-blue-50 p-3 rounded-2xl">
-              <Coffee className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Allocated Cuti</div>
-              <div className="text-sm font-bold text-slate-850 mt-0.5">
-                {leaveBalance ? `${leaveBalance.allocated} Days` : "12 Days"}
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-emerald-50 p-3 rounded-2xl">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used Balance</div>
-              <div className="text-sm font-bold text-slate-850 mt-0.5">
-                {leaveBalance ? `${leaveBalance.used} Days` : "0 Days"}
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
-            <div className="bg-indigo-50 p-3 rounded-2xl">
-              <Clock className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Remaining Cuti</div>
-              <div className="text-sm font-bold text-slate-850 mt-0.5">
-                {leaveBalance ? `${leaveBalance.remaining} Days` : "12 Days"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Submission Form Card */}
-          <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
-            <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Plus className="w-4.5 h-4.5 text-blue-600" />
-              <span>Apply for New Leave</span>
-            </div>
-
-            <form onSubmit={handleLeaveSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Leave Type</label>
-                <select
-                  value={leaveForm.type}
-                  onChange={(e) => setLeaveForm(prev => ({ ...prev, type: e.target.value }))}
-                  className="input-field w-full bg-slate-50 text-xs py-2.5 cursor-pointer border-slate-200"
-                >
-                  <option value="ANNUAL_LEAVE">Annual Leave (Cuti Tahunan)</option>
-                  <option value="SICK_LEAVE">Sick Leave (Sakit dengan Surat)</option>
-                  <option value="PERMIT">Permit (Izin Khusus)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Start Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={leaveForm.startDate}
-                    onChange={(e) => setLeaveForm(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
-                  />
+        {activeTab === "my" ? (
+          <>
+            {/* Leave Balance Stats Header */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-blue-50 p-3 rounded-2xl">
+                  <Coffee className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">End Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={leaveForm.endDate}
-                    onChange={(e) => setLeaveForm(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
-                  />
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Allocated Cuti</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {leaveBalance ? `${leaveBalance.allocated} Days` : "12 Days"}
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Reason / Details</label>
-                <textarea
-                  required
-                  placeholder="State your reasons clearly..."
-                  value={leaveForm.reason}
-                  onChange={(e) => setLeaveForm(prev => ({ ...prev, reason: e.target.value }))}
-                  className="input-field w-full bg-slate-50 text-xs min-h-[90px] resize-none border-slate-200"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={leaveRequestMutation.isPending}
-                className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-md shadow-blue-500/10 active:scale-[0.98]"
-              >
-                {leaveRequestMutation.isPending ? "Submitting..." : "Submit Leave Request"}
-              </button>
-            </form>
-          </div>
-
-          {/* Leave History & Approvals List */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Pending Approvals Inbox (Visible to SPV/Managers) */}
-            {pendingApprovals.length > 0 && (
-              <div className="bg-amber-50/30 border border-amber-200 rounded-[2rem] p-8 shadow-sm space-y-4">
-                <div className="text-sm font-bold text-amber-800 flex items-center gap-2 border-b border-amber-100 pb-3">
-                  <Shield className="w-4.5 h-4.5 text-amber-600" />
-                  <span>Approval Worklist Inbox ({pendingApprovals.length})</span>
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-emerald-50 p-3 rounded-2xl">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
                 </div>
-
-                <div className="space-y-3">
-                  {pendingApprovals.map((req: any) => {
-                    const activeStep = req.approvals.find((a: any) => a.status === "PENDING");
-                    return (
-                      <div
-                        key={req.id}
-                        className="bg-white border border-amber-100 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-slate-800 text-xs">{req.user.fullName}</span>
-                            <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                              {req.type}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-bold">
-                            📅 {new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}
-                          </div>
-                          <div className="text-xs text-slate-600 font-semibold italic mt-1">"{req.reason}"</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleApproveLeave(activeStep.id)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm shadow-emerald-500/10"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button
-                            onClick={() => handleRejectLeave(activeStep.id)}
-                            className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm shadow-rose-500/10"
-                          >
-                            <X className="w-3.5 h-3.5" /> Reject
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used Balance</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {leaveBalance ? `${leaveBalance.used} Days` : "0 Days"}
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* History Card */}
-            <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
-              <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <FileText className="w-4.5 h-4.5 text-blue-600" />
-                <span>Leave Request Pipeline Tracking</span>
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-indigo-50 p-3 rounded-2xl">
+                  <Clock className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Remaining Cuti</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {leaveBalance ? `${leaveBalance.remaining} Days` : "12 Days"}
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="space-y-4 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
-                {leaves.map((req: any) => (
-                  <div
-                    key={req.id}
-                    className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl space-y-3 hover:border-slate-200 transition-all"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800 text-xs">{req.type}</span>
-                        <span className={cn(
-                          "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
-                          req.status === "APPROVED" && "bg-emerald-50 text-emerald-600 border-emerald-100",
-                          req.status === "PENDING" && "bg-blue-50 text-blue-600 border-blue-100",
-                          req.status === "REJECTED" && "bg-rose-50 text-rose-600 border-rose-100"
-                        )}>
-                          {req.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handlePrintLeaveForm(req)}
-                          className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
-                          title="Print Official Form"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="text-[10px] text-slate-400 font-mono font-bold">
-                          {new Date(req.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Submission Form Card */}
+              <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
+                <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Plus className="w-4.5 h-4.5 text-blue-600" />
+                  <span>Apply for New Leave</span>
+                </div>
 
-                    <div className="text-xs text-slate-600 font-medium">
-                      📅 Duration: <strong className="text-slate-800">{new Date(req.startDate).toLocaleDateString()}</strong> to <strong className="text-slate-800">{new Date(req.endDate).toLocaleDateString()}</strong>
-                    </div>
-                    <div className="text-xs text-slate-500 italic bg-white border border-slate-100 rounded-xl p-2.5">
-                      Reason: "{req.reason}"
-                    </div>
-
-                    {/* Timeline Tracker */}
-                    <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-[10px]">
-                      {req.approvals.map((app: any) => (
-                        <div key={app.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-1 relative">
-                          <div className="font-black text-slate-400 uppercase tracking-widest text-[8px]">{app.roleName}</div>
-                          <div className={cn(
-                            "font-bold flex items-center gap-1 text-[10px] mt-1",
-                            app.status === "APPROVED" && "text-emerald-600",
-                            app.status === "PENDING" && "text-blue-600",
-                            app.status === "REJECTED" && "text-rose-600"
-                          )}>
-                            {app.status === "APPROVED" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
-                            {app.status === "REJECTED" && <XCircle className="w-3.5 h-3.5 text-rose-500" />}
-                            {app.status === "PENDING" && <Clock className="w-3.5 h-3.5 text-blue-500" />}
-                            <span>{app.status}</span>
-                          </div>
-                          {app.notes && (
-                            <p className="text-[9px] text-slate-400 mt-1 italic leading-tight">
-                              Note: "{app.notes}"
-                            </p>
-                          )}
-                        </div>
+                <form onSubmit={handleLeaveSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Leave Type</label>
+                    <select
+                      value={leaveForm.type}
+                      onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, type: e.target.value }))}
+                      className="input-field w-full bg-slate-50 text-xs py-2.5 cursor-pointer border-slate-200"
+                    >
+                      {customLeaveTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Start Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={leaveForm.startDate}
+                        onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, startDate: e.target.value }))}
+                        className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">End Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={leaveForm.endDate}
+                        onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, endDate: e.target.value }))}
+                        className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
+                      />
                     </div>
                   </div>
-                ))}
 
-                {leaves.length === 0 && (
-                  <div className="py-16 text-center text-slate-400 font-medium text-xs">
-                    No leaves requested yet.
+                  {customFormSettings.requireAttachment && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Dokumen Pendukung / Attachment URL (Required)</label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://example.com/medical-certificate.pdf"
+                        value={leaveForm.attachmentUrl}
+                        onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, attachmentUrl: e.target.value }))}
+                        className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
+                      />
+                    </div>
+                  )}
+
+                  {customFormSettings.enableBackupEmployee && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Backup / Handover Person</label>
+                      <input
+                        type="text"
+                        placeholder="Nama Karyawan Pengganti..."
+                        value={leaveForm.backupEmployee}
+                        onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, backupEmployee: e.target.value }))}
+                        className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
+                      />
+                    </div>
+                  )}
+
+                  {customFormSettings.enableEmergencyContact && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Emergency Contact Phone</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: 08123456789"
+                        value={leaveForm.emergencyContact}
+                        onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, emergencyContact: e.target.value }))}
+                        className="input-field w-full bg-slate-50 text-xs py-2 border-slate-200"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Reason / Details</label>
+                    <textarea
+                      required
+                      placeholder="State your reasons clearly..."
+                      value={leaveForm.reason}
+                      onChange={(e) => setLeaveForm((prev: any) => ({ ...prev, reason: e.target.value }))}
+                      className="input-field w-full bg-slate-50 text-xs min-h-[90px] resize-none border-slate-200"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={leaveRequestMutation.isPending}
+                    className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-md shadow-blue-500/10 active:scale-[0.98]"
+                  >
+                    {leaveRequestMutation.isPending ? "Submitting..." : "Submit Leave Request"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Leave History & Approvals List */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Pending Approvals Inbox (Visible to SPV/Managers) */}
+                {pendingApprovals.length > 0 && (
+                  <div className="bg-amber-50/30 border border-amber-200 rounded-[2rem] p-8 shadow-sm space-y-4">
+                    <div className="text-sm font-bold text-amber-800 flex items-center gap-2 border-b border-amber-100 pb-3">
+                      <Shield className="w-4.5 h-4.5 text-amber-600" />
+                      <span>Approval Worklist Inbox ({pendingApprovals.length})</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {pendingApprovals.map((req: any) => {
+                        const activeStep = req.approvals.find((a: any) => a.status === "PENDING");
+                        return (
+                          <div
+                            key={req.id}
+                            className="bg-white border border-amber-100 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-slate-800 text-xs">{req.user.fullName}</span>
+                                <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                  {req.type}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-bold">
+                                📅 {new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}
+                              </div>
+                              <div className="text-xs text-slate-600 font-semibold italic mt-1">"{req.reason}"</div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleApproveLeave(activeStep.id)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm shadow-emerald-500/10"
+                              >
+                                <Check className="w-3.5 h-3.5" /> Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectLeave(activeStep.id)}
+                                className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm shadow-rose-500/10"
+                              >
+                                <X className="w-3.5 h-3.5" /> Reject
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
+
+                {/* History Card */}
+                <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
+                  <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <FileText className="w-4.5 h-4.5 text-blue-600" />
+                    <span>Leave Request Pipeline Tracking</span>
+                  </div>
+
+                  <div className="space-y-4 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                    {leaves.map((req: any) => (
+                      <div
+                        key={req.id}
+                        className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl space-y-3 hover:border-slate-200 transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-800 text-xs">{req.type}</span>
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
+                              req.status === "APPROVED" && "bg-emerald-50 text-emerald-600 border-emerald-100",
+                              req.status === "PENDING" && "bg-blue-50 text-blue-600 border-blue-100",
+                              req.status === "REJECTED" && "bg-rose-50 text-rose-600 border-rose-100"
+                            )}>
+                              {req.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handlePrintLeaveForm(req)}
+                              className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                              title="Print Official Form"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-[10px] text-slate-400 font-mono font-bold">
+                              {new Date(req.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-slate-600 font-medium">
+                          📅 Duration: <strong className="text-slate-800">{new Date(req.startDate).toLocaleDateString()}</strong> to <strong className="text-slate-800">{new Date(req.endDate).toLocaleDateString()}</strong>
+                        </div>
+                        <div className="text-xs text-slate-500 italic bg-white border border-slate-100 rounded-xl p-2.5">
+                          Reason: "{req.reason}"
+                        </div>
+
+                        {/* Timeline Tracker */}
+                        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100 text-[10px]">
+                          {req.approvals.map((app: any) => (
+                            <div key={app.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-1 relative">
+                              <div className="font-black text-slate-400 uppercase tracking-widest text-[8px]">{app.roleName}</div>
+                              <div className={cn(
+                                "font-bold flex items-center gap-1 text-[10px] mt-1",
+                                app.status === "APPROVED" && "text-emerald-600",
+                                app.status === "PENDING" && "text-blue-600",
+                                app.status === "REJECTED" && "text-rose-600"
+                              )}>
+                                {app.status === "APPROVED" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                                {app.status === "REJECTED" && <XCircle className="w-3.5 h-3.5 text-rose-500" />}
+                                {app.status === "PENDING" && <Clock className="w-3.5 h-3.5 text-blue-500" />}
+                                <span>{app.status}</span>
+                              </div>
+                              {app.notes && (
+                                <p className="text-[9px] text-slate-400 mt-1 italic leading-tight">
+                                  Note: "{app.notes}"
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {leaves.length === 0 && (
+                      <div className="py-16 text-center text-slate-400 font-medium text-xs">
+                        No leaves requested yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
+          </>
+        ) : (
+          /* ========================================================================= */
+          /* ADMIN CONTROL PANEL VIEW */
+          /* ========================================================================= */
+          <div className="space-y-8">
+            {/* Admin Metrics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-blue-50 p-3 rounded-2xl">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Karyawan Sedang Cuti</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {adminRequests.filter((r: any) => {
+                      const today = new Date();
+                      const start = new Date(r.startDate);
+                      const end = new Date(r.endDate);
+                      return r.status === "APPROVED" && today >= start && today <= end;
+                    }).length} Orang
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-amber-50 p-3 rounded-2xl">
+                  <Clock className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pengajuan Pending Oversight</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {adminRequests.filter((r: any) => r.status === "PENDING").length} Pengajuan
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card p-6 flex items-center gap-4 border border-slate-100/80 shadow-sm">
+                <div className="bg-emerald-50 p-3 rounded-2xl">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Terdaftar Aktif</div>
+                  <div className="text-sm font-bold text-slate-850 mt-0.5">
+                    {adminBalances.length} Karyawan
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Leaves (Sedang Cuti) Tracker */}
+            <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
+              <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Calendar className="w-4.5 h-4.5 text-blue-600" />
+                <span>Karyawan yang Sedang Cuti Hari Ini</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(() => {
+                  const today = new Date();
+                  const onLeaveUsers = adminRequests.filter((r: any) => {
+                    const start = new Date(r.startDate);
+                    const end = new Date(r.endDate);
+                    return r.status === "APPROVED" && today >= start && today <= end;
+                  });
+
+                  if (onLeaveUsers.length === 0) {
+                    return (
+                      <div className="col-span-full py-8 text-center text-slate-400 font-semibold text-xs">
+                        Tidak ada karyawan yang sedang cuti hari ini.
+                      </div>
+                    );
+                  }
+
+                  return onLeaveUsers.map((req: any) => (
+                    <div key={req.id} className="bg-blue-50/40 border border-blue-100 p-4 rounded-2xl space-y-2">
+                      <div className="font-extrabold text-xs text-slate-800">{req.user.fullName}</div>
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                        {req.user.division?.name || "No Division"} • {req.type.replace(/_/g, " ")}
+                      </div>
+                      <div className="text-[11px] text-slate-655 font-medium">
+                        Tanggal: {new Date(req.startDate).toLocaleDateString()} s/d {new Date(req.endDate).toLocaleDateString()}
+                      </div>
+                      <div className="text-[11px] italic text-slate-500 truncate mt-1">
+                        "{req.reason}"
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Form Customizer Card */}
+              <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
+                <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Settings className="w-4.5 h-4.5 text-blue-600" />
+                  <span>Kustomisasi Form Cuti</span>
+                </div>
+
+                {/* Form Settings Toggles */}
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block border-b pb-1">Aktifkan Field Kustom</label>
+                  
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-100 p-3 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all select-none">
+                    <input
+                      type="checkbox"
+                      checked={customFormSettings.requireAttachment}
+                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, requireAttachment: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="text-xs font-bold text-slate-700">Wajib Lampiran Dokumen</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Meminta upload URL surat keterangan/pdf pendukung.</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-100 p-3 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all select-none">
+                    <input
+                      type="checkbox"
+                      checked={customFormSettings.enableBackupEmployee}
+                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, enableBackupEmployee: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="text-xs font-bold text-slate-700">Field Karyawan Handover/Backup</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Input nama karyawan yang membackup tugas selama cuti.</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 bg-slate-50 border border-slate-100 p-3 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all select-none">
+                    <input
+                      type="checkbox"
+                      checked={customFormSettings.enableEmergencyContact}
+                      onChange={(e) => setCustomFormSettings(prev => ({ ...prev, enableEmergencyContact: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="text-xs font-bold text-slate-700">Field Kontak Darurat</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Nomor telepon alternatif yang bisa dihubungi saat darurat.</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Custom Leave Types Options */}
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Tambah/Edit Jenis Cuti</label>
+                  
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Contoh: Cuti Melahirkan..."
+                      value={newLeaveType}
+                      onChange={(e) => setNewLeaveType(e.target.value)}
+                      className="input-field flex-1 bg-slate-50 text-xs py-2 border-slate-200"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newLeaveType.trim()) return;
+                        if (customLeaveTypes.includes(newLeaveType.trim())) return;
+                        setCustomLeaveTypes(prev => [...prev, newLeaveType.trim()]);
+                        setNewLeaveType("");
+                      }}
+                      className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 cursor-pointer flex items-center justify-center transition-all shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                    {customLeaveTypes.map((type, idx) => (
+                      <div key={idx} className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                        <span className="text-xs text-slate-655 font-bold">{type}</span>
+                        {customLeaveTypes.length > 1 && (
+                          <button
+                            onClick={() => setCustomLeaveTypes(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Leave Balances & Requests Tables */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Leave Balances Grid (Sisa Cuti, Digunakan, Total) */}
+                <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
+                  <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <Users className="w-4.5 h-4.5 text-blue-600" />
+                    <span>Daftar Sisa & Jatah Cuti Karyawan</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-widest text-[9px] font-bold">
+                          <th className="pb-3 text-left">Karyawan</th>
+                          <th className="pb-3 text-center">Jatah Mula</th>
+                          <th className="pb-3 text-center">Digunakan</th>
+                          <th className="pb-3 text-center">Sisa Cuti</th>
+                          <th className="pb-3 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminBalances.map((bal: any) => (
+                          <tr key={bal.userId} className="border-b border-slate-100 hover:bg-slate-50/40">
+                            <td className="py-3">
+                              <div className="font-extrabold text-slate-800">{bal.fullName}</div>
+                              <div className="text-[10px] text-slate-400 font-medium">{bal.divisionName} • {bal.email}</div>
+                            </td>
+                            <td className="py-3 text-center font-bold text-slate-700">{bal.allocated} Hari</td>
+                            <td className="py-3 text-center font-bold text-amber-600">{bal.used} Hari</td>
+                            <td className="py-3 text-center font-black text-blue-600">{bal.remaining} Hari</td>
+                            <td className="py-3 text-center">
+                              <button
+                                onClick={() => {
+                                  setIsAdjustingBalance(bal);
+                                  setAdjustForm({ allocated: bal.allocated, used: bal.used });
+                                }}
+                                className="bg-slate-50 hover:bg-slate-100 text-slate-655 p-2 rounded-xl inline-flex items-center gap-1.5 font-bold transition-all border border-slate-200"
+                              >
+                                <Edit2 className="w-3 h-3 text-blue-600" /> Adjust
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* All Requests Oversight Pipeline */}
+                <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-4">
+                  <div className="text-sm font-bold text-slate-850 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <Shield className="w-4.5 h-4.5 text-blue-600" />
+                    <span>Semua Pengajuan Cuti (Log Admin)</span>
+                  </div>
+
+                  <div className="space-y-4 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                    {adminRequests.map((req: any) => (
+                      <div key={req.id} className="bg-slate-50/50 border border-slate-100 p-5 rounded-2xl space-y-3 hover:border-slate-200 transition-all">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <span className="font-extrabold text-slate-800 text-xs">{req.user?.fullName}</span>
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{req.user?.division?.name || "No Division"}</div>
+                          </div>
+                          <span className={cn(
+                            "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
+                            req.status === "APPROVED" && "bg-emerald-50 text-emerald-600 border-emerald-100",
+                            req.status === "PENDING" && "bg-blue-50 text-blue-600 border-blue-100",
+                            req.status === "REJECTED" && "bg-rose-50 text-rose-600 border-rose-100"
+                          )}>
+                            {req.status}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-655 font-bold">
+                          Jenis: {req.type.replace(/_/g, " ")} • 📅 {new Date(req.startDate).toLocaleDateString()} s/d {new Date(req.endDate).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-slate-500 italic bg-white border border-slate-100 rounded-xl p-2.5">
+                          Alasan: "{req.reason}"
+                        </div>
+
+                        {/* Admin Action Override controls */}
+                        <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100">
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            Dibuat: {new Date(req.createdAt).toLocaleString()}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const notes = prompt("Catatan admin untuk persetujuan:");
+                                if (notes === null) return;
+                                adminOverrideRequestMutation.mutate({ requestId: req.id, status: "APPROVED", notes });
+                              }}
+                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer border border-emerald-200 transition-all"
+                            >
+                              Force Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                const notes = prompt("Catatan admin untuk penolakan:");
+                                if (notes === null) return;
+                                adminOverrideRequestMutation.mutate({ requestId: req.id, status: "REJECTED", notes });
+                              }}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer border border-rose-200 transition-all"
+                            >
+                              Force Reject
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {adminRequests.length === 0 && (
+                      <div className="py-16 text-center text-slate-400 font-semibold text-xs">
+                        Belum ada aktivitas pengajuan cuti sama sekali.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Adjust Leave Balance Modal */}
+            <AnimatePresence>
+              {isAdjustingBalance && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsAdjustingBalance(null)}
+                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                  />
+
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                    className="relative w-full max-w-md bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden z-10 space-y-6"
+                  >
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50/40 rounded-full filter blur-3xl" />
+                    
+                    <button
+                      onClick={() => setIsAdjustingBalance(null)}
+                      className="absolute top-6 right-6 text-slate-400 hover:text-slate-655 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    <div className="space-y-2 relative z-10 text-center">
+                      <span className="bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1 rounded-full inline-block">
+                        Adjust Leave Balance
+                      </span>
+                      <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                        {isAdjustingBalance.fullName}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                        {isAdjustingBalance.divisionName}
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 relative z-10">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Total Jatah Cuti Mula (Allocated)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={adjustForm.allocated}
+                          onChange={(e) => setAdjustForm(prev => ({ ...prev, allocated: parseInt(e.target.value, 10) || 0 }))}
+                          className="input-field w-full bg-slate-50 text-xs py-2.5 border-slate-200"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Jatah yang Sudah Digunakan (Used)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={adjustForm.used}
+                          onChange={(e) => setAdjustForm(prev => ({ ...prev, used: parseInt(e.target.value, 10) || 0 }))}
+                          className="input-field w-full bg-slate-50 text-xs py-2.5 border-slate-200"
+                        />
+                      </div>
+
+                      <div className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 text-xs font-bold text-slate-700">
+                        <span>Sisa Kuota Cuti Baru:</span>
+                        <span className="text-blue-600 font-extrabold text-sm">{adjustForm.allocated - adjustForm.used} Hari</span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          updateBalanceMutation.mutate({
+                            userId: isAdjustingBalance.userId,
+                            allocated: adjustForm.allocated,
+                            used: adjustForm.used,
+                          });
+                        }}
+                        disabled={updateBalanceMutation.isPending}
+                        className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl shadow-md active:scale-[0.98]"
+                      >
+                        {updateBalanceMutation.isPending ? "Saving..." : "Save Balance Settings"}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-          </main>
+        )}
+      </main>
 
       {/* Printable Leave Request Form */}
       {selectedPrintLeave && (

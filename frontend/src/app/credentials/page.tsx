@@ -29,7 +29,8 @@ import {
   ChevronDown,
   Edit3,
   AlertTriangle,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ export default function CredentialsPage() {
   const [tagInput, setTagInput] = useState("");
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 30;
   
@@ -79,7 +81,7 @@ export default function CredentialsPage() {
     name: "",
     username: "",
     address: "",
-    password: "",
+    password: "vault-default-placeholder",
     description: "",
     type: "SSH Key",
     tags: [] as string[],
@@ -150,7 +152,7 @@ export default function CredentialsPage() {
       name: "", 
       username: "", 
       address: "", 
-      password: "", 
+      password: "vault-default-placeholder", 
       description: "",
       type: identityTypes?.[0]?.value || "SSH Key", 
       tags: [],
@@ -203,12 +205,14 @@ export default function CredentialsPage() {
 
   const filteredCredentials = credentials?.filter(cred => {
     const s = search.toLowerCase();
-    return (
+    const matchesSearch = (
       (cred.name?.toLowerCase() || "").includes(s) ||
       (cred.username?.toLowerCase() || "").includes(s) ||
       (cred.address?.toLowerCase() || "").includes(s) ||
       (cred.tags?.some(t => t.toLowerCase().includes(s)) || false)
     );
+    const matchesTab = activeTab === "All" || cred.type === activeTab;
+    return matchesSearch && matchesTab;
   }) || [];
 
   const totalPages = Math.ceil(filteredCredentials.length / itemsPerPage);
@@ -221,6 +225,103 @@ export default function CredentialsPage() {
     t.toLowerCase().includes(tagInput.toLowerCase()) && !formData.tags.includes(t)
   );
 
+  const handleExportToExcel = () => {
+    if (!credentials || credentials.length === 0) {
+      alert("No credentials in vault to export.");
+      return;
+    }
+
+    // Group credentials by type (identity type)
+    const grouped: Record<string, Credential[]> = {};
+    credentials.forEach(cred => {
+      const type = cred.type || "Other";
+      if (!grouped[type]) {
+        grouped[type] = [];
+      }
+      grouped[type].push(cred);
+    });
+
+    // Helper to sanitize XML characters
+    const escapeXml = (unsafe: string) => {
+      if (!unsafe) return "";
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    };
+
+    let xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>YATO Credential Vault</Author>
+  <Created>${new Date().toISOString()}</Created>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#4F81BD" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>`;
+
+    Object.entries(grouped).forEach(([type, list]) => {
+      // Worksheet name length is max 31 characters in Excel and cannot contain special characters
+      const sheetName = escapeXml(type.substring(0, 30).replace(/[:\\/?*\[\]]/g, ""));
+      xml += `\\n <Worksheet ss:Name="${sheetName}">
+  <Table>
+   <Row ss:Height="20">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Credential Label</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Target IP / Domain / Service</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Identity Type</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Username / ID</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Description</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Tags</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Created At</Data></Cell>
+   </Row>`;
+
+      list.forEach(cred => {
+        xml += `\\n   <Row>
+    <Cell><Data ss:Type="String">${escapeXml(cred.name)}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(cred.address || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(cred.type)}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(cred.username || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(cred.description || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(cred.tags?.join(", ") || "")}</Data></Cell>
+    <Cell><Data ss:Type="String">${escapeXml(new Date(cred.createdAt).toLocaleString())}</Data></Cell>
+   </Row>`;
+      });
+
+      xml += `\\n  </Table>
+ </Worksheet>`;
+    });
+
+    xml += `\\n</Workbook>`;
+
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `yato_credentials_export_${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex min-h-screen bg-background font-sans text-[13px]">
       <MobileNav />
@@ -231,16 +332,26 @@ export default function CredentialsPage() {
           <div>
             <PageHeader title="Credential Vault" subtitle="Secure identity and resource access management" />
           </div>
-          <button 
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="btn-primary flex items-center justify-center gap-2.5 px-6 shadow-xl shadow-blue-600/20"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-bold uppercase tracking-widest text-[11px]">Add Security Secret</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={handleExportToExcel}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl font-bold cursor-pointer transition-all shadow-sm"
+              title="Export Vault details into multi-sheet Excel file"
+            >
+              <Download className="w-5 h-5 text-blue-600" />
+              <span className="font-bold uppercase tracking-widest text-[11px]">Export Vault</span>
+            </button>
+            <button 
+              onClick={() => { resetForm(); setIsModalOpen(true); }}
+              className="btn-primary flex items-center justify-center gap-2.5 px-6 shadow-xl shadow-blue-600/20"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-bold uppercase tracking-widest text-[11px]">Add Security Secret</span>
+            </button>
+          </div>
         </header>
 
-        <div className="flex gap-3 mb-8">
+        <div className="flex gap-3 mb-6">
           <div className="relative flex-1 group">
             <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
             <input 
@@ -251,6 +362,30 @@ export default function CredentialsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+        </div>
+
+        {/* Identity Type Tabs Filter */}
+        <div className="flex flex-wrap items-center gap-1.5 mb-8 bg-slate-50 border border-slate-100 p-1.5 rounded-[1.5rem] shadow-sm max-w-max">
+          {["All", ...(identityTypes?.map((t: any) => t.value) || [])].map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer",
+                  isActive 
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/10" 
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/50"
+                )}
+              >
+                {tab === "All" ? "All Identity Types" : tab}
+              </button>
+            );
+          })}
         </div>
 
         <div className="bg-white border border-slate-50 rounded-2xl overflow-visible shadow-sm">
@@ -437,7 +572,7 @@ export default function CredentialsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 col-span-2">
                     <label>Identity Type</label>
                     <div className="relative group">
                       <select 
@@ -451,44 +586,6 @@ export default function CredentialsPage() {
                         ))}
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label>Username / ID <span className="text-[10px] text-slate-400 font-normal ml-2">(Optional)</span></label>
-                    <div className="relative group">
-                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                      <input 
-                        type="text" 
-                        className="input-field pl-12 w-full py-2.5 bg-slate-50/50"
-                        placeholder="admin"
-                        autoComplete="username"
-                        value={formData.username}
-                        onChange={e => setFormData({...formData, username: e.target.value})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 col-span-2">
-                    <label>Private Secret / Key</label>
-                    <div className="relative group">
-                      <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                      <input 
-                        type="password" 
-                        required
-                        className="input-field pl-12 pr-11 w-full font-mono py-2.5 bg-slate-50/50"
-                        placeholder="••••••••••••••••"
-                        autoComplete="new-password"
-                        value={formData.password}
-                        onChange={e => setFormData({...formData, password: e.target.value})}
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => setShowPassInForm(!showPassInForm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all"
-                      >
-                        {showPassInForm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
                   </div>
 

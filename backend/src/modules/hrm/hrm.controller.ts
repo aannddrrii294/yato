@@ -215,4 +215,31 @@ export class HrmController {
   async actionOvertime(@Request() req: any, @Param('id') overtimeId: string, @Body() dto: { status: 'APPROVED' | 'REJECTED'; notes?: string }) {
     return this.hrmService.actionOvertime(req.user.id, overtimeId, dto.status, dto.notes);
   }
+
+  // =========================================================================
+  // ADMIN LEAVE MANAGEMENT ENDPOINTS
+  // =========================================================================
+  @Get('admin/leaves/balances')
+  @ApiOperation({ summary: 'Get all user leave balances' })
+  async adminGetLeaveBalances() {
+    return this.hrmService.adminGetLeaveBalances();
+  }
+
+  @Patch('admin/leaves/balances/:userId')
+  @ApiOperation({ summary: 'Customize a user leave balance' })
+  async adminUpdateLeaveBalance(@Param('userId') userId: string, @Body() dto: { allocated?: number; used?: number }) {
+    return this.hrmService.adminUpdateLeaveBalance(userId, dto);
+  }
+
+  @Get('admin/leaves/requests')
+  @ApiOperation({ summary: 'Get all leave requests for admin oversight' })
+  async adminGetAllLeaveRequests() {
+    return this.hrmService.adminGetAllLeaveRequests();
+  }
+
+  @Patch('admin/leaves/requests/:requestId/status')
+  @ApiOperation({ summary: 'Admin force override leave request status' })
+  async adminOverrideLeaveRequest(@Param('requestId') requestId: string, @Body() dto: { status: 'APPROVED' | 'REJECTED'; notes?: string }) {
+    return this.hrmService.adminOverrideLeaveRequest(requestId, dto);
+  }
 }

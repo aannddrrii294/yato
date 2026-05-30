@@ -713,4 +713,151 @@ export class HrmService {
       },
     });
   }
+
+  // =========================================================================
+  // ADMIN LEAVE MANAGEMENT
+  // =========================================================================
+
+  async adminGetLeaveBalances() {
+    const users = await this.prisma.user.findMany({
+      include: {
+        leaveBalance: true,
+        division: true,
+      },
+    });
+
+    const currentYear = new Date().getFullYear();
+
+    return Promise.all(
+      users.map(async (u) => {
+        let balance = u.leaveBalance;
+        if (!balance) {
+          balance = await this.prisma.leaveBalance.create({
+            data: {
+              userId: u.id,
+              allocated: 12,
+              used: 0,
+              remaining: 12,
+              year: currentYear,
+            },
+          });
+        }
+        return {
+          userId: u.id,
+          fullName: u.fullName,
+          email: u.email,
+          divisionName: u.division?.name || "Unassigned",
+          allocated: balance.allocated,
+          used: balance.used,
+          remaining: balance.remaining,
+        };
+      })
+    );
+  }
+
+  async adminUpdateLeaveBalance(userId: string, data: { allocated?: number; used?: number }) {
+    const balance = await this.prisma.leaveBalance.findUnique({
+      where: { userId },
+    });
+
+    if (!balance) {
+      throw new NotFoundException("Leave balance not found for this user");
+    }
+
+    const newAllocated = data.allocated !== undefined ? data.allocated : balance.allocated;
+    const newUsed = data.used !== undefined ? data.used : balance.used;
+    const newRemaining = newAllocated - newUsed;
+
+    return this.prisma.leaveBalance.update({
+      where: { userId },
+      data: {
+        allocated: newAllocated,
+        used: newUsed,
+        remaining: newRemaining,
+      },
+    });
+  }
+
+  async adminGetAllLeaveRequests() {
+    return this.prisma.leaveRequest.findMany({
+      include: {
+        user: {
+          include: {
+            division: true,
+          },
+        },
+        approvals: {
+          include: {
+            approver: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async adminOverrideLeaveRequest(requestId: string, data: { status: 'APPROVED' | 'REJECTED'; notes?: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.leaveRequest.findUnique({
+        where: { id: requestId },
+        include: { approvals: true },
+      });
+
+      if (!request) {
+        throw new NotFoundException("Leave request not found");
+      }
+
+      if (request.status === data.status) {
+        return request;
+      }
+
+      if (request.type === 'ANNUAL_LEAVE') {
+        const start = new Date(request.startDate);
+        const end = new Date(request.endDate);
+        const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        const balance = await tx.leaveBalance.findUnique({
+          where: { userId: request.userId },
+        });
+
+        if (balance) {
+          let newUsed = balance.used;
+          if (data.status === 'APPROVED' && request.status !== 'APPROVED') {
+            newUsed += durationDays;
+          } else if (data.status !== 'APPROVED' && request.status === 'APPROVED') {
+            newUsed = Math.max(0, newUsed - durationDays);
+          }
+          const newRemaining = balance.allocated - newUsed;
+
+          await tx.leaveBalance.update({
+            where: { userId: request.userId },
+            data: {
+              used: newUsed,
+              remaining: newRemaining,
+            },
+          });
+        }
+      }
+
+      const updatedRequest = await tx.leaveRequest.update({
+        where: { id: requestId },
+        data: { status: data.status },
+      });
+
+      await tx.leaveApproval.updateMany({
+        where: { leaveRequestId: requestId },
+        data: {
+          status: data.status,
+          notes: data.notes || "Admin override",
+          actionedAt: new Date(),
+        },
+      });
+
+      return updatedRequest;
+    });
+  }
 }
