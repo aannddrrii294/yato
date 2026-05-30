@@ -326,6 +326,18 @@ export default function SystemConfigPage() {
   });
   const [editingCatalogId, setEditingCatalogId] = useState<string | null>(null);
 
+  const handleOpenAddCatalog = () => {
+    setNewCatalog({
+      category: "SERVICE_TYPE",
+      name: "",
+      value: "",
+      description: "",
+      metadata: { customFields: [] }
+    });
+    setEditingCatalogId(null);
+    setIsAddCatalogModalOpen(true);
+  };
+
   const handleOpenEditCatalog = (item: any) => {
     setNewCatalog({
       category: item.category,
@@ -588,7 +600,7 @@ export default function SystemConfigPage() {
           <>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Email Settings */}
-          <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
+          <form onSubmit={e => e.preventDefault()} className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
             <div className="flex items-center gap-3 mb-8">
               <Mail className="w-5 h-5 text-blue-600" />
               <h2 className="text-sm font-bold text-slate-900">Email Delivery Subsystem</h2>
@@ -629,6 +641,7 @@ export default function SystemConfigPage() {
                   <label>Relay Password</label>
                   <input 
                     type="password" 
+                    autoComplete="new-password"
                     className="input-field w-full" 
                     value={emailConfig.pass}
                     onChange={e => setEmailConfig({...emailConfig, pass: e.target.value})}
@@ -685,10 +698,10 @@ export default function SystemConfigPage() {
                 />
               </div>
             </div>
-          </section>
+          </form>
 
           {/* WhatsApp Settings */}
-          <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
+          <form onSubmit={e => e.preventDefault()} className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
             <div className="flex items-center gap-3 mb-8">
               <MessageSquare className="w-5 h-5 text-emerald-600" />
               <h2 className="text-sm font-bold text-slate-900">WhatsApp Notification (WAHA)</h2>
@@ -708,6 +721,7 @@ export default function SystemConfigPage() {
                 <label>API Key</label>
                 <input 
                   type="password" 
+                  autoComplete="new-password"
                   className="input-field w-full" 
                   placeholder="Your WAHA API Key"
                   value={whatsappConfig.apiKey} 
@@ -760,10 +774,10 @@ export default function SystemConfigPage() {
                 )}
               </AnimatePresence>
             </div>
-          </section>
+          </form>
 
           {/* Telegram Settings */}
-          <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
+          <form onSubmit={e => e.preventDefault()} className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
             <div className="flex items-center gap-3 mb-8">
               <Send className="w-5 h-5 text-blue-500" />
               <h2 className="text-sm font-bold text-slate-900">Telegram Notification Bot</h2>
@@ -773,6 +787,7 @@ export default function SystemConfigPage() {
                 <label>Bot API Token</label>
                 <input 
                   type="password" 
+                  autoComplete="new-password"
                   className="input-field w-full" 
                   placeholder="123456:ABC-DEF..."
                   value={telegramConfig.botToken} 
@@ -829,7 +844,7 @@ export default function SystemConfigPage() {
                 )}
               </AnimatePresence>
             </div>
-          </section>
+          </form>
         </div>
 
         {/* Notification Routing Rules Manager */}
@@ -1451,7 +1466,7 @@ export default function SystemConfigPage() {
         {activeTab === 'database' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Database Configuration */}
-          <section className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
+          <form onSubmit={e => e.preventDefault()} className="glass-card ring-1 ring-slate-200/60 shadow-xl shadow-slate-200/10">
             <div className="flex items-center gap-3 mb-8">
               <Database className="w-5 h-5 text-purple-600" />
               <h2 className="text-sm font-bold text-slate-900">Primary Database Configuration</h2>
@@ -1492,6 +1507,7 @@ export default function SystemConfigPage() {
                   <label>Password</label>
                   <input 
                     type="password" 
+                    autoComplete="new-password"
                     className="input-field w-full" 
                     value={dbConfig.password}
                     onChange={e => setDbConfig({...dbConfig, password: e.target.value})}
@@ -1546,7 +1562,7 @@ export default function SystemConfigPage() {
                 )}
               </AnimatePresence>
             </div>
-          </section>
+          </form>
         </div>
         )}
 
@@ -1562,7 +1578,7 @@ export default function SystemConfigPage() {
               <p className="text-slate-500 text-xs font-semibold mt-1">Manage dynamic lists for Service Types and OS Templates</p>
             </div>
             <button 
-              onClick={() => setIsAddCatalogModalOpen(true)}
+              onClick={handleOpenAddCatalog}
               className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> Add Catalog Item
@@ -2354,11 +2370,15 @@ export default function SystemConfigPage() {
               
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Plus className="w-5 h-5" />
+                  {editingCatalogId ? <Edit className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">Add Catalog Item</h2>
-                  <p className="text-xs font-semibold text-slate-500">Create a new resource parameter</p>
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                    {editingCatalogId ? "Edit Catalog Item" : "Add Catalog Item"}
+                  </h2>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {editingCatalogId ? "Modify an existing resource parameter" : "Create a new resource parameter"}
+                  </p>
                 </div>
               </div>
 
@@ -2480,8 +2500,8 @@ export default function SystemConfigPage() {
                   disabled={!newCatalog.name || !newCatalog.value}
                   className="btn-primary w-full py-3.5 flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
                 >
-                  <Plus className="w-4 h-4" />
-                  Save to Catalog
+                  {editingCatalogId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {editingCatalogId ? "Update Catalog Item" : "Save to Catalog"}
                 </button>
               </div>
             </motion.div>

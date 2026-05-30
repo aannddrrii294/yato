@@ -27,8 +27,8 @@ export class PermissionsGuard implements CanActivate {
       return false;
     }
 
-    // Admin has all permissions
-    const isAdmin = user.roles?.some(ur => ur.role.name === 'ADMIN');
+    // Admin has all permissions (case-insensitive check)
+    const isAdmin = user.roles?.some(ur => ur.role?.name?.toUpperCase() === 'ADMIN');
     if (isAdmin) return true;
 
     const userPermissions = user.roles?.reduce((acc, ur) => {

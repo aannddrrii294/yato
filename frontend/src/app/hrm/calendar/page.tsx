@@ -3,18 +3,21 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
   Loader2,
-  Clock
+  Clock,
+  X,
+  CheckCircle2,
+  MapPin,
+  AlertCircle
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 
@@ -23,17 +26,88 @@ const getFormattedDate = (date: Date) => {
 };
 
 export default function CalendarPage() {
+  const queryClient = useQueryClient();
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1); // 1-indexed
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Fetch timesheets
-  const { data: timesheets = [], isLoading: isTimesheetsLoading } = useQuery({
+  const { data: timesheets = [], isLoading: isTimesheetsLoading, refetch: refetchTimesheets } = useQuery({
     queryKey: ["hrm", "timesheets", calendarYear, calendarMonth],
     queryFn: async () => {
       const res = await api.get(`/hrm/timesheets/my?year=${calendarYear}&month=${calendarMonth}`);
       return res.data;
     },
   });
+
+  const clockInMutation = useMutation({
+    mutationFn: async (payload?: { latenessReason?: string }) => {
+      const res = await api.post("/hrm/timesheets/clock-in", payload || {});
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchTimesheets();
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      alert("Successfully clocked in!");
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || "Failed to clock in";
+      alert(msg);
+    }
+  });
+
+  const clockOutMutation = useMutation({
+    mutationFn: async (payload?: { notes?: string }) => {
+      const res = await api.post("/hrm/timesheets/clock-out", payload || {});
+      return res.data;
+    },
+    onSuccess: () => {
+      refetchTimesheets();
+      queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      alert("Successfully clocked out!");
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || "Failed to clock out";
+      alert(msg);
+    }
+  });
+
+  const handleClockIn = async () => {
+    try {
+      await clockInMutation.mutateAsync({});
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "";
+      if (msg.includes("Lateness Reason Required")) {
+        const reason = prompt("You are late! Please specify why you are late today:");
+        if (reason === null) return; // User cancelled
+        if (!reason.trim()) {
+          alert("Lateness reason is required to clock in when late!");
+          return;
+        }
+        clockInMutation.mutate({ latenessReason: reason });
+      }
+    }
+  };
+
+  const handleClockOut = () => {
+    const notes = prompt("Add daily report summary (optional):");
+    if (notes === null) return; // User cancelled
+    clockOutMutation.mutate({ notes: notes.trim() || undefined });
+  };
+
+  const todayStr = getFormattedDate(new Date());
+  const todayTimesheet = timesheets.find(
+    (t: any) => getFormattedDate(new Date(t.date)) === todayStr
+  );
+
+  const checkInLog = todayTimesheet?.logs?.find((l: any) => l.type === "CHECK_IN");
+  const checkOutLog = todayTimesheet?.logs?.find((l: any) => l.type === "CHECK_OUT");
 
   return (
     <div className="flex min-h-screen bg-background font-sans text-[13px] text-slate-900">
@@ -48,12 +122,13 @@ export default function CalendarPage() {
               subtitle="Monthly timesheet grid overview, work hour metrics, and detailed attendance records" 
             />
           </div>
-          <Link href="/hrm/attendance">
-            <button className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2.5 shadow-lg shadow-blue-500/10 hover:shadow-xl transition-all cursor-pointer">
-              <Clock className="w-4 h-4" />
-              Check-in / Check-out Panel
-            </button>
-          </Link>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2.5 shadow-lg shadow-blue-500/10 hover:shadow-xl transition-all cursor-pointer"
+          >
+            <Clock className="w-4 h-4" />
+            Check-in / Check-out Panel
+          </button>
         </header>
 
         <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
@@ -179,6 +254,129 @@ export default function CalendarPage() {
           )}
         </div>
       </main>
+
+      {/* Check-in / Check-out Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white border border-slate-100 rounded-[2rem] p-8 shadow-2xl overflow-hidden z-10"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50/40 rounded-full filter blur-3xl" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-650 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all cursor-pointer z-20"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-6 relative z-10">
+                <div className="text-center space-y-2">
+                  <span className="bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1 rounded-full inline-block">
+                    Attendance Terminal
+                  </span>
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight">Check-In / Check-Out Panel</h3>
+                </div>
+
+                {/* Clock */}
+                <div className="bg-slate-50/80 border border-slate-100/60 rounded-2xl py-5 px-6 text-center space-y-1">
+                  <div className="text-4xl font-extrabold text-slate-850 font-mono tracking-widest">
+                    {currentTime.toLocaleTimeString("en-GB", { hour12: false })}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {currentTime.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </div>
+                </div>
+
+                {/* Info and Buttons */}
+                <div className="space-y-4">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={handleClockIn}
+                      disabled={!!checkInLog || clockInMutation.isPending}
+                      className={cn(
+                        "py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
+                        !!checkInLog 
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60"
+                          : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]"
+                      )}
+                    >
+                      <Clock className="w-5 h-5" />
+                      <span>{checkInLog ? "Checked In" : "Check In"}</span>
+                    </button>
+
+                    <button
+                      onClick={handleClockOut}
+                      disabled={!checkInLog || !!checkOutLog || clockOutMutation.isPending}
+                      className={cn(
+                        "py-4 rounded-2xl text-xs font-black uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
+                        (!checkInLog || !!checkOutLog)
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200/60"
+                          : "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/10 hover:shadow-xl hover:shadow-amber-500/20 active:scale-[0.98]"
+                      )}
+                    >
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>{checkOutLog ? "Checked Out" : "Check Out"}</span>
+                    </button>
+                  </div>
+
+                  {/* Checked In / Out Details */}
+                  {checkInLog && (
+                    <div className="bg-blue-50/60 border border-blue-100 p-4 rounded-2xl space-y-2">
+                      <div className="flex items-center gap-2 text-blue-800 font-extrabold text-xs">
+                        <CheckCircle2 className="w-4.5 h-4.5 text-blue-600" />
+                        <span>Check-In Recorded Successfully</span>
+                      </div>
+                      <div className="text-[11px] text-slate-600 font-medium space-y-1 pl-6">
+                        <p>📅 <strong className="text-slate-800">Tanggal:</strong> {new Date(checkInLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                        <p>⏱️ <strong className="text-slate-800">Jam:</strong> {new Date(checkInLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                        <p>💻 <strong className="text-slate-800">IP Address:</strong> {checkInLog.ipAddress || "LAN/Office Network"}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {checkOutLog && (
+                    <div className="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-xs">
+                        <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
+                        <span>Check-Out Recorded Successfully</span>
+                      </div>
+                      <div className="text-[11px] text-slate-600 font-medium space-y-1 pl-6">
+                        <p>📅 <strong className="text-slate-800">Tanggal:</strong> {new Date(checkOutLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                        <p>⏱️ <strong className="text-slate-800">Jam:</strong> {new Date(checkOutLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                        <p>⏱️ <strong className="text-slate-800">Total Hours:</strong> {todayTimesheet?.totalHours || 0} hrs</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!checkInLog && (
+                    <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center gap-2.5 text-slate-400 font-semibold text-[11px]">
+                      <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span>Belum ada aktivitas absensi hari ini. Silakan Check-in.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

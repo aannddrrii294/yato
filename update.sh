@@ -100,8 +100,8 @@ if [ -d "backend/prisma/migrations" ]; then
     $DOCKER_COMPOSE exec -T backend npx prisma migrate deploy
 else
     echo -e "   • ${RED}⚠️  Warning: Migrations directory not found in backend/prisma/migrations.${NC}"
-    echo -e "     Using 'db push' as fallback. Note: This may cause data loss on schema conflicts."
-    $DOCKER_COMPOSE exec -T backend npx prisma db push --accept-data-loss
+    echo -e "     Using 'db push' as fallback to synchronize schema changes safely."
+    $DOCKER_COMPOSE exec -T backend npx prisma db push
 fi
 $DOCKER_COMPOSE exec -T backend npx prisma db seed
 echo -e "${GREEN}✅ Database synchronized and seeded successfully.${NC}"

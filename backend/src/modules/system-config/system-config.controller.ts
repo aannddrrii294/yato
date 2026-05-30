@@ -2,8 +2,8 @@ import { Controller, Get, Put, Post, Body, UseGuards, Req } from '@nestjs/common
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SystemConfigService } from './system-config.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('system-config')
 @Controller('system/config')
@@ -17,8 +17,8 @@ export class SystemConfigController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all system settings' })
   findAll() {
@@ -26,8 +26,8 @@ export class SystemConfigController {
   }
 
   @Put()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update system settings' })
   update(@Body() settings: Record<string, any>, @Req() req: any) {
@@ -38,8 +38,8 @@ export class SystemConfigController {
   }
 
   @Post('db/test')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Test primary database connection' })
   testDbConnection(@Body() config: any) {
@@ -47,8 +47,8 @@ export class SystemConfigController {
   }
 
   @Post('db/save')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Save primary database connection to .env' })
   saveDbConnection(@Body() config: any, @Req() req: any) {
@@ -64,8 +64,8 @@ export class SystemConfigController {
   }
 
   @Get('tuning')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current system performance tuning configurations' })
   getTuning() {
@@ -73,8 +73,8 @@ export class SystemConfigController {
   }
 
   @Post('tuning')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Save performance tuning configurations and optionally trigger restart' })
   saveTuning(@Body() config: any, @Req() req: any) {
@@ -82,8 +82,8 @@ export class SystemConfigController {
   }
 
   @Post('restart')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('MANAGE_CONFIG')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Trigger manual system services graceful restart' })
   triggerManualRestart(@Req() req: any) {

@@ -700,12 +700,12 @@ export default function AssetsPage() {
                       <select 
                         required
                         className="input-field w-full py-2.5 bg-slate-50/50 border border-slate-100 rounded-xl appearance-none font-bold"
-                        value={formData.assetType}
-                        onChange={(e) => setFormData({...formData, assetType: e.target.value, metadata: {}})}
+                        value={formData.assetType ? formData.assetType.toUpperCase() : ""}
+                        onChange={(e) => setFormData({...formData, assetType: e.target.value.toUpperCase()})}
                       >
                         <option value="">Select type...</option>
                         {assetTypes?.map(t => (
-                          <option key={t.id} value={t.value}>{t.name} ({t.value.toUpperCase()})</option>
+                          <option key={t.id} value={t.value.toUpperCase()}>{t.name} ({t.value.toUpperCase()})</option>
                         ))}
                       </select>
                     </div>

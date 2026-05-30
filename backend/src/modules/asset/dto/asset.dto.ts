@@ -48,10 +48,10 @@ export class CreateAssetDto {
 }
 
 export class UpdateAssetDto {
-  @ApiProperty({ example: 'SERVER', required: false })
+  @ApiProperty({ example: 'SERVER', required: true })
   @IsString()
-  @IsOptional()
-  assetType?: string;
+  @IsNotEmpty()
+  assetType: string;
 
   @ApiProperty({ example: 'prod-db-srv01', required: false })
   @IsString()
