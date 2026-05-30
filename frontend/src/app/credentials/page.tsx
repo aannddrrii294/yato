@@ -63,11 +63,12 @@ export default function CredentialsPage() {
   
   // Password verification state for revealing secrets
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
-  const [verifyPurpose, setVerifyPurpose] = useState<"REVEAL" | "EXPORT">("REVEAL");
+  const [verifyPurpose, setVerifyPurpose] = useState<"REVEAL" | "EXPORT" | "EDIT">("REVEAL");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [verifyError, setVerifyError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [pendingRevealCredId, setPendingRevealCredId] = useState<string | null>(null);
+  const [pendingEditCred, setPendingEditCred] = useState<Credential | null>(null);
   const [secretVerified, setSecretVerified] = useState(false);
   const [failedVerifyAttempts, setFailedVerifyAttempts] = useState(0);
   
@@ -492,7 +493,13 @@ export default function CredentialsPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleEdit(cred)}
+                          onClick={() => {
+                            setPendingEditCred(cred);
+                            setVerifyPurpose("EDIT");
+                            setVerifyPassword("");
+                            setVerifyError("");
+                            setIsVerifyModalOpen(true);
+                          }}
                           className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                           title="Edit"
                         >
@@ -923,6 +930,8 @@ export default function CredentialsPage() {
                 <p className="text-[11px] font-medium text-slate-400 mb-6">
                   {verifyPurpose === "EXPORT" 
                     ? "Enter your password to authorize vault export" 
+                    : verifyPurpose === "EDIT"
+                    ? "Enter your password to modify this security secret"
                     : "Enter your account password to reveal this secret"}
                 </p>
                 
@@ -941,6 +950,16 @@ export default function CredentialsPage() {
                       setVerifyPassword("");
                       setFailedVerifyAttempts(0);
                       handleExportToExcel();
+                    } else if (verifyPurpose === "EDIT") {
+                      // Verify standard password check for edit
+                      await api.post("/auth/verify-password", { password: verifyPassword });
+                      setIsVerifyModalOpen(false);
+                      setVerifyPassword("");
+                      setFailedVerifyAttempts(0);
+                      if (pendingEditCred) {
+                        handleEdit(pendingEditCred);
+                        setPendingEditCred(null);
+                      }
                     } else {
                       // Verify password then reveal secret
                       const res = await api.post(`/credentials/${pendingRevealCredId}/reveal`, { password: verifyPassword });
@@ -1000,7 +1019,7 @@ export default function CredentialsPage() {
                   <div className="flex gap-3 pt-2">
                     <button 
                       type="button"
-                      onClick={() => { setIsVerifyModalOpen(false); setVerifyPassword(""); setVerifyError(""); }}
+                      onClick={() => { setIsVerifyModalOpen(false); setVerifyPassword(""); setVerifyError(""); setPendingEditCred(null); }}
                       className="btn-secondary flex-1"
                     >
                       Cancel
@@ -1012,7 +1031,7 @@ export default function CredentialsPage() {
                     >
                       {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
                       <span className="text-[11px] font-bold uppercase tracking-wider">
-                        {verifyPurpose === "EXPORT" ? "Verify & Export" : "Verify & Reveal"}
+                        {verifyPurpose === "EXPORT" ? "Verify & Export" : verifyPurpose === "EDIT" ? "Verify & Edit" : "Verify & Reveal"}
                       </span>
                     </button>
                   </div>
