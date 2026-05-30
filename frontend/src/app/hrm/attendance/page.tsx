@@ -18,7 +18,10 @@ import {
   Loader2,
   Users,
   Search,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -33,8 +36,16 @@ export default function AttendancePage() {
   const [workNotes, setWorkNotes] = useState("");
   const [clientIp, setClientIp] = useState("192.168.201.18");
 
+  // Navigation tab: "terminal" | "calendar" | "admin"
+  const [activeTab, setActiveTab] = useState<"terminal" | "calendar" | "admin">("terminal");
+  
+  // Calendar states
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1); // 1-indexed
+  const [selectedDayTimesheet, setSelectedDayTimesheet] = useState<any | null>(null);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+
   // Admin Dashboard states
-  const [activeTab, setActiveTab] = useState<"terminal" | "admin">("terminal");
   const [selectedAdminDate, setSelectedAdminDate] = useState(getFormattedDate(new Date()));
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -79,11 +90,9 @@ export default function AttendancePage() {
   const todayShift = roster.find((s: any) => getFormattedDate(new Date(s.date)) === todayStr);
 
   const { data: timesheets = [], isLoading: isTimesheetsLoading, refetch: refetchTimesheets } = useQuery({
-    queryKey: ["hrm", "timesheets-today"],
+    queryKey: ["hrm", "timesheets", calendarYear, calendarMonth],
     queryFn: async () => {
-      const year = new Date().getFullYear();
-      const month = new Date().getMonth() + 1;
-      const res = await api.get(`/hrm/timesheets/my?year=${year}&month=${month}`);
+      const res = await api.get(`/hrm/timesheets/my?year=${calendarYear}&month=${calendarMonth}`);
       return res.data;
     },
   });
@@ -165,6 +174,14 @@ export default function AttendancePage() {
   const lateEmployees = adminAttendance.filter((a: any) => a.timesheet?.status === "LATE").length;
   const absentEmployees = totalEmployees - presentEmployees - lateEmployees;
 
+  const handleTabChange = (tab: "terminal" | "calendar" | "admin") => {
+    setActiveTab(tab);
+    if (tab === "terminal") {
+      setCalendarYear(new Date().getFullYear());
+      setCalendarMonth(new Date().getMonth() + 1);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background font-sans text-[13px] text-slate-900">
       <MobileNav />
@@ -174,26 +191,44 @@ export default function AttendancePage() {
         <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-5">
           <div className="flex-1">
             <PageHeader 
-              title="Attendance Control" 
-              subtitle={activeTab === "terminal" ? "Real-time terminal, geo-whitelisted log entries, and automated lateness reporting" : "Company-wide attendance monitoring, timesheet checks, and IP audit logs"} 
+              title="Attendance" 
+              subtitle={
+                activeTab === "terminal" 
+                  ? "Real-time terminal, geo-whitelisted log entries, and automated lateness reporting" 
+                  : activeTab === "calendar"
+                  ? "Monthly timesheet grid overview, work hour metrics, and detailed attendance records"
+                  : "Company-wide attendance monitoring, timesheet checks, and IP audit logs"
+              } 
             />
           </div>
-          {isAdmin && (
-            <div className="bg-slate-50 border border-slate-150/60 p-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm">
+          <div className="bg-slate-50 border border-slate-150/60 p-1.5 rounded-2xl flex items-center gap-1.5 shadow-sm flex-wrap sm:flex-nowrap">
+            <button
+              onClick={() => handleTabChange("terminal")}
+              className={cn(
+                "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
+                activeTab === "terminal"
+                  ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
+                  : "text-slate-450 hover:text-slate-850 font-bold"
+              )}
+            >
+              <Laptop className="w-3.5 h-3.5" />
+              Terminal Clock
+            </button>
+            <button
+              onClick={() => handleTabChange("calendar")}
+              className={cn(
+                "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
+                activeTab === "calendar"
+                  ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
+                  : "text-slate-450 hover:text-slate-850 font-bold"
+              )}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              My Timesheets
+            </button>
+            {isAdmin && (
               <button
-                onClick={() => setActiveTab("terminal")}
-                className={cn(
-                  "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
-                  activeTab === "terminal"
-                    ? "bg-white text-slate-800 shadow-sm border border-slate-100 font-extrabold"
-                    : "text-slate-450 hover:text-slate-850 font-bold"
-                )}
-              >
-                <Laptop className="w-3.5 h-3.5" />
-                Terminal Clock
-              </button>
-              <button
-                onClick={() => setActiveTab("admin")}
+                onClick={() => handleTabChange("admin")}
                 className={cn(
                   "px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center gap-2",
                   activeTab === "admin"
@@ -204,8 +239,8 @@ export default function AttendancePage() {
                 <Users className="w-3.5 h-3.5" />
                 Admin Panel
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
         {activeTab === "terminal" ? (
@@ -376,7 +411,7 @@ export default function AttendancePage() {
                     ))}
 
                     {(!todayTimesheet || todayTimesheet.logs.length === 0) && (
-                      <div className="py-16 text-center text-slate-400 font-medium text-xs">
+                      <div className="py-16 text-center text-slate-405 font-medium text-xs">
                         No attendance check logs recorded for today yet.
                       </div>
                     )}
@@ -391,6 +426,133 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
+          </div>
+        ) : activeTab === "calendar" ? (
+          <div className="bg-white border border-slate-150/60 rounded-[2rem] p-8 shadow-sm space-y-6">
+            {/* Calendar Header / Navigation */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (calendarMonth === 1) {
+                      setCalendarMonth(12);
+                      setCalendarYear(y => y - 1);
+                    } else {
+                      setCalendarMonth(m => m - 1);
+                    }
+                  }}
+                  className="bg-slate-50 border border-slate-200 hover:bg-slate-100 p-2 rounded-xl text-slate-500 hover:text-slate-900 cursor-pointer transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                <span className="text-base font-extrabold text-slate-800 font-sans tracking-tight min-w-[140px] text-center">
+                  {new Date(calendarYear, calendarMonth - 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                </span>
+                
+                <button
+                  onClick={() => {
+                    if (calendarMonth === 12) {
+                      setCalendarMonth(1);
+                      setCalendarYear(y => y + 1);
+                    } else {
+                      setCalendarMonth(m => m + 1);
+                    }
+                  }}
+                  className="bg-slate-50 border border-slate-200 hover:bg-slate-100 p-2 rounded-xl text-slate-500 hover:text-slate-900 cursor-pointer transition-all"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-4 text-xs font-bold">
+                <span className="flex items-center gap-2 text-blue-600">
+                  <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> 
+                  Present
+                </span>
+                <span className="flex items-center gap-2 text-amber-600">
+                  <span className="w-2.5 h-2.5 bg-amber-500 rounded-full" /> 
+                  Late
+                </span>
+                <span className="flex items-center gap-2 text-purple-600">
+                  <span className="w-2.5 h-2.5 bg-purple-500 rounded-full" /> 
+                  On Leave
+                </span>
+              </div>
+            </div>
+
+            {isTimesheetsLoading ? (
+              <div className="flex flex-col items-center justify-center py-32 text-slate-400">
+                <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-600" />
+                <p className="text-xs font-bold uppercase tracking-widest">Loading Calendar...</p>
+              </div>
+            ) : (
+              /* Calendar Grid */
+              <div className="grid grid-cols-7 gap-3">
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
+                  <div key={d} className="text-center text-[10px] font-bold uppercase text-slate-400 tracking-wider py-1">
+                    {d}
+                  </div>
+                ))}
+
+                {/* Empty offsets */}
+                {Array.from({ length: new Date(calendarYear, calendarMonth - 1, 1).getDay() - 1 }).map((_, idx) => (
+                  <div key={`offset-${idx}`} className="bg-slate-50/20 border border-slate-100 rounded-2xl min-h-[95px] opacity-30" />
+                ))}
+
+                {/* Month days */}
+                {Array.from({ length: new Date(calendarYear, calendarMonth, 0).getDate() }).map((_, idx) => {
+                  const dayNum = idx + 1;
+                  const dateObj = new Date(calendarYear, calendarMonth - 1, dayNum);
+                  const dateStr = getFormattedDate(dateObj);
+                  const ts = timesheets.find((t: any) => getFormattedDate(new Date(t.date)) === dateStr);
+
+                  return (
+                    <motion.div
+                      key={`day-${dayNum}`}
+                      whileHover={{ scale: 1.01 }}
+                      onClick={() => {
+                        setSelectedDayTimesheet(ts || { logs: [], totalHours: 0 });
+                        setSelectedDayDate(dateObj);
+                      }}
+                      className={cn(
+                        "bg-white border border-slate-100 rounded-2xl p-4 min-h-[105px] flex flex-col justify-between transition-all hover:bg-slate-50/50 hover:border-slate-200 shadow-sm cursor-pointer",
+                        ts?.status === "PRESENT" && "border-l-4 border-l-blue-500 bg-blue-50/10",
+                        ts?.status === "LATE" && "border-l-4 border-l-amber-500 bg-amber-50/10",
+                        ts?.status === "ON_LEAVE" && "border-l-4 border-l-purple-500 bg-purple-50/10"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-400 font-mono">{dayNum}</span>
+                        {ts?.status && (
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded",
+                            ts.status === "PRESENT" && "bg-blue-50 text-blue-600 border border-blue-100",
+                            ts.status === "LATE" && "bg-amber-50 text-amber-600 border border-amber-100",
+                            ts.status === "ON_LEAVE" && "bg-purple-50 text-purple-600 border border-purple-100"
+                          )}>
+                            {ts.status}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1 mt-3">
+                        {ts?.totalHours > 0 && (
+                          <div className="text-[11px] font-mono font-bold text-slate-700">
+                            {ts.totalHours} hrs
+                          </div>
+                        )}
+                        {ts?.notes && (
+                          <div className="text-[9px] text-slate-450 font-medium truncate max-w-[110px]" title={ts.notes}>
+                            {ts.notes}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -550,6 +712,101 @@ export default function AttendancePage() {
           </div>
         )}
       </main>
+
+      {/* Selected Day Details Modal */}
+      <AnimatePresence>
+        {selectedDayTimesheet && selectedDayDate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setSelectedDayTimesheet(null);
+                setSelectedDayDate(null);
+              }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white border border-slate-100 rounded-[2rem] p-8 shadow-2xl overflow-hidden z-10"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50/40 rounded-full filter blur-3xl" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setSelectedDayTimesheet(null);
+                  setSelectedDayDate(null);
+                }}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-655 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all cursor-pointer z-20"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-6 relative z-10">
+                <div className="text-center space-y-2">
+                  <span className="bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-extrabold uppercase tracking-widest px-3.5 py-1 rounded-full inline-block">
+                    Attendance Details
+                  </span>
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                    {selectedDayDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Check-In Details */}
+                  {(() => {
+                    const checkInLog = selectedDayTimesheet.logs?.find((l: any) => l.type === "CHECK_IN");
+                    if (!checkInLog) return null;
+                    return (
+                      <div className="bg-blue-50/60 border border-blue-100 p-5 rounded-2xl space-y-3">
+                        <div className="text-blue-800 font-extrabold text-xs">
+                          Check-In Recorded Successfully
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium space-y-1.5 pl-1">
+                          <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkInLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                          <p><strong className="text-slate-800">Jam:</strong> {new Date(checkInLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                          <p><strong className="text-slate-800">IP Address:</strong> {checkInLog.ipAddress || "LAN/Office Network"}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Check-Out Details */}
+                  {(() => {
+                    const checkOutLog = selectedDayTimesheet.logs?.find((l: any) => l.type === "CHECK_OUT");
+                    if (!checkOutLog) return null;
+                    return (
+                      <div className="bg-emerald-50/60 border border-emerald-100 p-5 rounded-2xl space-y-3">
+                        <div className="text-emerald-800 font-extrabold text-xs">
+                          Check-Out Recorded Successfully
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium space-y-1.5 pl-1">
+                          <p><strong className="text-slate-800">Tanggal:</strong> {new Date(checkOutLog.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+                          <p><strong className="text-slate-800">Jam:</strong> {new Date(checkOutLog.timestamp).toLocaleTimeString("en-GB", { hour12: false })}</p>
+                          <p><strong className="text-slate-800">Total Hours:</strong> {selectedDayTimesheet.totalHours} hrs</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {!selectedDayTimesheet.logs?.length && (
+                    <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex items-center justify-center text-slate-400 font-semibold text-[11px]">
+                      <span>Belum ada aktivitas absensi ditanggal ini.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

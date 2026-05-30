@@ -136,8 +136,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "VIEW_DASHBOARD" },
         { icon: Ticket, label: "Support Tickets", href: "/tickets", permission: "VIEW_SUPPORT_TICKETS" },
         { icon: CheckSquare, label: "Tasks Tracker", href: "/tasks" },
-        { icon: Clock, label: "Attendance Terminal", href: "/hrm/attendance" },
-        { icon: Calendar, label: "Calendar Timesheets", href: "/hrm/calendar" },
+        { icon: Clock, label: "Attendance", href: "/hrm/attendance" },
         { icon: Coffee, label: "Leave Hub", href: "/hrm/leaves" },
         { icon: HardDrive, label: "File Manager", href: "/files" },
       ]
