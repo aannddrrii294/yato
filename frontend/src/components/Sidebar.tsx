@@ -153,7 +153,7 @@ export function Sidebar({ isMobile, onNavItemClick }: SidebarProps) {
         { icon: Shield, label: "Management Admin Panel", href: "/hrm/admin-panel", permission: "MANAGE_HRM" },
         { icon: Shield, label: "Division Mappings", href: "/hrm/divisions", permission: "MANAGE_HRM" },
         { icon: Calendar, label: "Shift Scheduler", href: "/hrm/scheduler", permission: "MANAGE_HRM" },
-        { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_HRM" },
+        // { icon: Coins, label: "Overtime Hub", href: "/hrm/overtime", permission: "MANAGE_HRM" },
         { icon: Edit, label: "Attendance Adjust", href: "/hrm/adjustments", permission: "MANAGE_HRM" },
       ]
     },
