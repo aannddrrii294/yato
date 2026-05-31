@@ -202,16 +202,18 @@ export class SystemConfigService {
           res.on('end', () => {
             try {
               const containers = JSON.parse(data);
-              const result = containers.map((c: any) => {
-                const name = c.Names && c.Names[0] ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12);
-                return {
-                  name: name.toUpperCase(),
-                  image: c.Image,
-                  state: c.State.toUpperCase(),
-                  status: c.Status,
-                  healthy: c.State.toLowerCase() === 'running'
-                };
-              });
+              const result = containers
+                .map((c: any) => {
+                  const name = c.Names && c.Names[0] ? c.Names[0].replace(/^\//, '') : c.Id.substring(0, 12);
+                  return {
+                    name: name.toUpperCase(),
+                    image: c.Image,
+                    state: c.State.toUpperCase(),
+                    status: c.Status,
+                    healthy: c.State.toLowerCase() === 'running'
+                  };
+                })
+                .filter((c: any) => c.name.startsWith('YATO'));
               resolve(result);
             } catch (e) {
               resolve([]);
