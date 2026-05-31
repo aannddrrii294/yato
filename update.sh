@@ -87,7 +87,7 @@ fi
 
 # Step 2: Rebuild and Restart
 echo -e "${YELLOW}📦 Rebuilding and restarting containers...${NC}"
-$DOCKER_COMPOSE up -d --build
+$DOCKER_COMPOSE up -d --build --remove-orphans
 
 # Proactively restart Nginx to flush DNS resolver cache for internal container IPs
 echo -e "${YELLOW}⚡ Flushing Nginx DNS resolver cache...${NC}"
