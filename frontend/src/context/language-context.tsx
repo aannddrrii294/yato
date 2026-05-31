@@ -111,7 +111,96 @@ const enToId: Record<string, string> = {
   "requests": "pengajuan",
   "employees": "karyawan",
   "days": "hari",
-  "reason": "alasan"
+  "reason": "alasan",
+  "tasks": "tugas",
+  "support": "dukungan",
+  "ticket": "tiket",
+  "files": "berkas",
+  "credentials": "kredensial",
+  "vault": "kubah",
+  "virtual machines": "mesin virtual",
+  "branding settings": "pengaturan branding",
+  "general settings": "pengaturan umum",
+  "security settings": "pengaturan keamanan",
+  "network settings": "pengaturan jaringan",
+  "branding": "branding",
+  "general": "umum",
+  "security": "keamanan",
+  "network": "jaringan",
+  "roles": "peran",
+  "permissions": "izin",
+  "users": "pengguna",
+  "audit log": "log audit",
+  "system stats": "statistik sistem",
+  "control center": "pusat kontrol",
+  "database status": "status basis data",
+  "redis status": "status redis",
+  "active sessions": "sesi aktif",
+  "system logs": "log sistem",
+  "backup & restore": "cadangan & pulihkan",
+  "mfa configurations": "konfigurasi mfa",
+  "active vm instances": "instansi vm aktif",
+  "running": "berjalan",
+  "stopped": "berhenti",
+  "provisioned": "disediakan",
+  "cpu usage": "penggunaan cpu",
+  "ram usage": "penggunaan ram",
+  "disk usage": "penggunaan disk",
+  "ip address": "alamat ip",
+  "os version": "versi os",
+  "uptime": "waktu aktif",
+  "search by employee, email or division...": "cari berdasarkan karyawan, email atau divisi...",
+  "employee name": "nama karyawan",
+  "email": "email",
+  "division": "divisi",
+  "check-in": "masuk",
+  "check-out": "pulang",
+  "lateness reason / notes": "alasan terlambat / catatan",
+  "no employees found matching the search criteria.": "tidak ada karyawan yang cocok dengan kriteria pencarian.",
+  "fetching attendance data...": "mengambil data kehadiran...",
+  "export csv": "ekspor csv",
+  "present": "hadir",
+  "late": "terlambat",
+  "absent": "absen",
+  "absent/no log": "absen/tidak ada log",
+  "on time": "tepat waktu",
+  "late arrival": "kedatangan terlambat",
+  "my timesheets": "jadwal kerja saya",
+  "terminal clock": "jam terminal",
+  "admin panel": "panel admin",
+  "clock-in successful": "absen masuk berhasil",
+  "clock-out successful": "absen pulang berhasil",
+  "lateness reason": "alasan terlambat",
+  "notes": "catatan",
+  "work hours": "jam kerja",
+  "hours": "jam",
+  "weekly summary": "ringkasan mingguan",
+  "monthly summary": "ringkasan bulanan",
+  "request leave": "ajukan cuti",
+  "annual leave": "cuti tahunan",
+  "sick leave": "cuti sakit",
+  "unpaid leave": "cuti di luar tanggungan",
+  "maternity leave": "cuti melahirkan",
+  "reason for leave": "alasan cuti",
+  "start date": "tanggal mulai",
+  "end date": "tanggal selesai",
+  "submit request": "kirim pengajuan",
+  "leave requests": "pengajuan cuti",
+  "my leave applications": "pengajuan cuti saya",
+  "approvals": "persetujuan",
+  "pending": "tertunda",
+  "approved": "disetujui",
+  "rejected": "ditolak",
+  "force approve": "paksa setujui",
+  "force reject": "paksa tolak",
+  "actioned by": "ditindaklanjuti oleh",
+  "no pending requests": "tidak ada pengajuan tertunda",
+  "leave balances": "saldo cuti",
+  "allocated": "dialokasikan",
+  "remaining": "sisa",
+  "emergency contact": "kontak darurat",
+  "backup employee": "karyawan backup",
+  "attachment": "lampiran"
 };
 
 // Build optimized reverse maps for clean two-way matching
@@ -127,28 +216,39 @@ Object.entries(enToId).forEach(([en, id]) => {
 
 function translateText(text: string, targetLang: Language): string {
   const trimmed = text.trim();
-  const lower = trimmed.toLowerCase();
-  
+  if (!trimmed) return text;
+
+  // Detect and preserve trailing punctuation (like :, ?, ., !)
+  const punctuationRegex = /[:\?\.\!]+$/;
+  const puncMatch = trimmed.match(punctuationRegex);
+  const suffix = puncMatch ? puncMatch[0] : "";
+  const cleanText = trimmed.replace(punctuationRegex, "").trim();
+  const lower = cleanText.toLowerCase();
+
+  let match: string | undefined = undefined;
   if (targetLang === "ID") {
-    const match = lookupId[lower];
-    if (match) {
-      // Match original case format (Title Case or Capitalized)
-      if (trimmed === trimmed.toUpperCase()) return match.toUpperCase();
-      if (trimmed[0] === trimmed[0].toUpperCase()) {
-        return match.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      }
-      return match;
-    }
+    match = lookupId[lower];
   } else {
-    const match = lookupEn[lower];
-    if (match) {
-      if (trimmed === trimmed.toUpperCase()) return match.toUpperCase();
-      if (trimmed[0] === trimmed[0].toUpperCase()) {
-        return match.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      }
-      return match;
-    }
+    match = lookupEn[lower];
   }
+
+  if (match) {
+    let result = match;
+    // Match original case format
+    if (cleanText === cleanText.toUpperCase()) {
+      result = match.toUpperCase();
+    } else if (cleanText[0] === cleanText[0].toUpperCase()) {
+      // If it is title case (every word capitalized) or just sentence case (only first letter capitalized)
+      const isTitleCase = cleanText.split(" ").every(w => !w || w[0] === w[0].toUpperCase());
+      if (isTitleCase) {
+        result = match.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      } else {
+        result = match.charAt(0).toUpperCase() + match.slice(1);
+      }
+    }
+    return result + suffix;
+  }
+
   return text;
 }
 
@@ -216,18 +316,42 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Initial translation
     translateNode(document.body, lang);
 
-    // Dynamic translation for added nodes
+    // Dynamic translation for added nodes and text changes
     const observer = new MutationObserver((mutations) => {
+      // Disconnect observer during translation to prevent infinite recursion loop
+      observer.disconnect();
+
       mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          translateNode(node, lang);
-        });
+        if (mutation.type === "childList") {
+          mutation.addedNodes.forEach((node) => {
+            translateNode(node, lang);
+          });
+        } else if (mutation.type === "characterData") {
+          const node = mutation.target;
+          const originalText = node.nodeValue?.trim();
+          if (originalText && originalText.length >= 2) {
+            const match = translateText(originalText, lang);
+            if (match && match !== originalText) {
+              const leadingSpace = node.nodeValue!.match(/^\s*/)?.[0] || "";
+              const trailingSpace = node.nodeValue!.match(/\s*$/)?.[0] || "";
+              node.nodeValue = leadingSpace + match + trailingSpace;
+            }
+          }
+        }
+      });
+
+      // Reconnect observer
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
       });
     });
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      characterData: true
     });
 
     return () => observer.disconnect();

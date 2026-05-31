@@ -179,7 +179,7 @@ export default function AttendancePage() {
       ];
     });
 
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((e: any[]) => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
