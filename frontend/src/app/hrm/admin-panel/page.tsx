@@ -53,7 +53,7 @@ function ManagementAdminPanelContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { appName, appLogo } = useBranding();
-  const { t } = useLanguage();
+  const { t, showToast } = useLanguage();
   const [activeTab, setActiveTab] = useState<"attendance" | "leaves">("attendance");
   const currentYear = new Date().getFullYear();
   const [selectedPrintLeave, setSelectedPrintLeave] = useState<any | null>(null);
@@ -182,10 +182,10 @@ function ManagementAdminPanelContent() {
       refetchAdminBalances();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
       setIsAdjustingBalance(null);
-      alert("User leave balance adjusted successfully!");
+      showToast("User leave balance adjusted successfully!", "success");
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || "Failed to adjust balance");
+      showToast(err.response?.data?.message || "Failed to adjust balance", "error");
     }
   });
 
@@ -199,10 +199,10 @@ function ManagementAdminPanelContent() {
       refetchAdminRequests();
       refetchAdminBalances();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
-      alert("Leave request overridden successfully!");
+      showToast("Leave request overridden successfully!", "success");
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || "Override failed");
+      showToast(err.response?.data?.message || "Override failed", "error");
     }
   });
 
@@ -216,7 +216,7 @@ function ManagementAdminPanelContent() {
 
   const exportAdminAttendanceToCSV = () => {
     if (!filteredAttendance || filteredAttendance.length === 0) {
-      alert("No attendance data available to export.");
+      showToast("No attendance data available to export.", "warning");
       return;
     }
 
@@ -253,6 +253,7 @@ function ManagementAdminPanelContent() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast("Attendance data exported successfully!", "success");
   };
 
   const totalEmployees = adminAttendance.length;

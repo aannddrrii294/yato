@@ -1,6 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { CheckCircle2, AlertCircle, Briefcase, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 type Language = "EN" | "ID";
 
@@ -8,6 +11,7 @@ interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
   t: (text: string) => string;
+  showToast: (message: string, type?: "success" | "error" | "info" | "warning") => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -297,6 +301,8 @@ function translateNode(node: Node, targetLang: Language) {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>("EN");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: "success" | "error" | "info" | "warning" }[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("yato_lang") as Language;
@@ -305,11 +311,28 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const t = (text: string) => {
+    return translateText(text, lang);
+  };
+
+  const showToast = (message: string, type: "success" | "error" | "info" | "warning" = "success") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message: t(message), type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
   const setLang = (newLang: Language) => {
-    setLangState(newLang);
-    localStorage.setItem("yato_lang", newLang);
-    // Force immediate full translation
-    translateNode(document.body, newLang);
+    setIsTranslating(true);
+    setTimeout(() => {
+      setLangState(newLang);
+      localStorage.setItem("yato_lang", newLang);
+      translateNode(document.body, newLang);
+      setTimeout(() => {
+        setIsTranslating(false);
+      }, 350);
+    }, 200);
   };
 
   useEffect(() => {
@@ -357,13 +380,92 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     return () => observer.disconnect();
   }, [lang]);
 
-  const t = (text: string) => {
-    return translateText(text, lang);
-  };
-
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, showToast }}>
       {children}
+
+      {/* Modern Premium Glassmorphic Language Transition Overlay */}
+      <AnimatePresence>
+        {isTranslating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white/80 border border-slate-200/50 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center max-w-[240px]"
+            >
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-emerald-600 animate-spin" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  {lang === "ID" ? "Applying Language..." : "Menerapkan Bahasa..."}
+                </p>
+                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+                  {lang === "ID" ? "Optimizing UI" : "Mengoptimalkan UI"}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Butter-Smooth Spring Toasts Container */}
+      <div className="fixed bottom-6 right-6 z-[999999] flex flex-col gap-3 max-w-sm w-full">
+        <AnimatePresence>
+          {toasts.map(toast => {
+            const isSuccess = toast.type === "success";
+            const isError = toast.type === "error";
+            const isWarning = toast.type === "warning";
+            return (
+              <motion.div
+                key={toast.id}
+                layout
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className={cn(
+                  "p-4 rounded-2xl border shadow-xl backdrop-blur-md flex items-center gap-3.5",
+                  isSuccess && "bg-emerald-50/95 border-emerald-200/60 text-emerald-800",
+                  isError && "bg-rose-50/95 border-rose-200/60 text-rose-800",
+                  isWarning && "bg-amber-50/95 border-amber-200/60 text-amber-800",
+                  toast.type === "info" && "bg-blue-50/95 border-blue-200/60 text-blue-800"
+                )}
+              >
+                <div className={cn(
+                  "p-2 rounded-xl text-white shadow-sm flex items-center justify-center flex-shrink-0",
+                  isSuccess && "bg-emerald-500",
+                  isError && "bg-rose-500",
+                  isWarning && "bg-amber-500",
+                  toast.type === "info" && "bg-blue-500"
+                )}>
+                  {isSuccess && <CheckCircle2 className="w-4 h-4" />}
+                  {isError && <AlertCircle className="w-4 h-4" />}
+                  {isWarning && <AlertCircle className="w-4 h-4" />}
+                  {toast.type === "info" && <Briefcase className="w-4 h-4" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black leading-snug">{toast.message}</p>
+                </div>
+                <button
+                  onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1 flex-shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </LanguageContext.Provider>
   );
 }

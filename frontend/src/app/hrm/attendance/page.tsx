@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/context/language-context";
 
 const getFormattedDate = (date: any) => {
   if (!date) return "";
@@ -46,6 +47,7 @@ const getFormattedDate = (date: any) => {
 export default function AttendancePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showToast } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [workNotes, setWorkNotes] = useState("");
   const [clientIp, setClientIp] = useState("192.168.201.18");
@@ -133,7 +135,11 @@ export default function AttendancePage() {
     onSuccess: () => {
       refetchTimesheets();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      showToast("Clock-in successful!", "success");
     },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || "Clock-in failed", "error");
+    }
   });
 
   const clockOutMutation = useMutation({
@@ -144,7 +150,11 @@ export default function AttendancePage() {
     onSuccess: () => {
       refetchTimesheets();
       queryClient.invalidateQueries({ queryKey: ["hrm"] });
+      showToast("Clock-out successful!", "success");
     },
+    onError: (err: any) => {
+      showToast(err.response?.data?.message || "Clock-out failed", "error");
+    }
   });
 
   const handleClockIn = () => {
@@ -160,7 +170,7 @@ export default function AttendancePage() {
 
   const exportUserTimesheetsToCSV = () => {
     if (!timesheets || timesheets.length === 0) {
-      alert("No timesheet data available to export.");
+      showToast("No timesheet data available to export.", "warning");
       return;
     }
 
@@ -189,6 +199,7 @@ export default function AttendancePage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showToast("Timesheet data exported successfully!", "success");
   };
 
   // Filtered employees for Admin View
