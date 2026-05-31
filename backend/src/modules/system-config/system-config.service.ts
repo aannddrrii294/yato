@@ -369,24 +369,25 @@ export class SystemConfigService {
     // Get live systemd services status
     const sshUp = await isPortOpen('host.docker.internal', 22) || await isPortOpen('192.168.201.18', 22);
     const dockerUp = dockerContainers.some(c => c.healthy);
+    const nginxContainerUp = dockerContainers.some(c => c.name === 'YATO-NGINX' && c.healthy);
     const systemdServices = [
       {
         name: 'docker.service',
         description: 'Docker Application Container Engine',
         status: dockerUp ? 'ACTIVE' : 'INACTIVE',
-        subState: 'running'
+        subState: dockerUp ? 'running' : 'dead'
       },
       {
         name: 'ssh.service',
         description: 'OpenBSD Secure Shell server',
-        status: 'ACTIVE',
-        subState: 'running'
+        status: sshUp ? 'ACTIVE' : 'INACTIVE',
+        subState: sshUp ? 'running' : 'dead'
       },
       {
         name: 'nginx.service',
         description: 'High Performance HTTP Server',
-        status: 'ACTIVE',
-        subState: 'running'
+        status: nginxContainerUp ? 'ACTIVE' : 'INACTIVE',
+        subState: nginxContainerUp ? 'running' : 'dead'
       },
       {
         name: 'systemd-journald.service',
